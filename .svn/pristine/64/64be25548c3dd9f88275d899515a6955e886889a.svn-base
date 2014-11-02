@@ -1,0 +1,81 @@
+package Numbermat.GUI.utils;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public class Configuration {
+    
+    public static final int GCD = 0;
+    public static final int BEZOUT = 1;
+    public static final int INVERSE_MOD = 2;
+    public static final int FACTORIZE = 3;
+    public static final int EULER_PHI = 4;
+    
+    public static final String[] PROBLEMS = new String[] {
+        "Největší společný dělitel",
+        "Bezoutova rovnost",
+        "Inverze modulo n",
+        "Rozklad na prvočísla",
+        "Eulerova točná funkce"
+    };
+    
+    public static final int MAX_INT = 99999999;
+    public static final int MIN_INT = -99999999;
+    
+    /** Lower bounds should be powers of 2
+      * Upper bounds should be powers of 2 minus 1
+      * (because of random prime generator)
+      */
+    private static int easyLowerBound = 1;
+    private static int easyUpperBound = 127;
+    private static int mediumLowerBound = 128;
+    private static int mediumUpperBound = 1023;
+    private static int hardLowerBound = 1024;
+    private static int hardUpperBound = 4095;
+    
+    public static int getEasyLowerBound() {
+        return easyLowerBound;
+    }
+
+    public static int getEasyUpperBound() {
+        return easyUpperBound;
+    }
+
+    public static int getMediumLowerBound() {
+        return mediumLowerBound;
+    }
+
+    public static int getMediumUpperBound() {
+        return mediumUpperBound;
+    }
+
+    public static int getHardLowerBound() {
+        return hardLowerBound;
+    }
+
+    public static int getHardUpperBound() {
+        return hardUpperBound;
+    }
+    
+    public static void setEasyBounds(int lower, int upper) {
+        if (lower > upper)
+            throw new IllegalArgumentException("Lower bound is bigger than upper.");
+        easyLowerBound = lower;
+        easyUpperBound = upper;
+    }
+    
+    public static void setMediumBounds(int lower, int upper) {
+        if (lower > upper)
+            throw new IllegalArgumentException("Lower bound is bigger than upper.");
+        mediumLowerBound = lower;
+        mediumUpperBound = upper;
+    }
+    
+    public static void setHardBounds(int lower, int upper) {
+        if (lower > upper)
+            throw new IllegalArgumentException("Lower bound is bigger than upper.");
+        hardLowerBound = lower;
+        hardUpperBound = upper;
+    }
+}

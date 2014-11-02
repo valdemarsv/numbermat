@@ -1,0 +1,66 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.AlgorithmsSteps;
+import Numbermat.Pair;
+import Numbermat.Utils;
+import java.util.ArrayList;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class EulerPhiProblem extends MathProblem {
+    
+    private int n;
+    
+    public EulerPhiProblem(final String difficulty) {
+        easyBounds = new Pair(1, 99);
+        mediumBounds = new Pair(100, 999);
+        hardBounds = new Pair(1000, 2999);
+        
+        final Pair<Integer, Integer> bounds = initBounds(difficulty);
+        final int lowerBound = bounds.getFirst();
+        final int upperBound = bounds.getSecond();
+        
+        final int n1 = Algorithms.randInt(lowerBound, upperBound, false);
+        setVariables(n1);
+    }
+    
+    public EulerPhiProblem(final int n1) {
+        setVariables(n1);
+    }
+    
+    private void setVariables(final int n1) {
+        n = n1;
+        result = new ArrayList<>(1);
+        result.add(Algorithms.eulerPhi(n));
+        prepareAll();
+    }
+
+    @Override
+    protected void prepareProblemPlaintext() {
+        problemPlaintext = AlgorithmsSteps.buildPhiEquals(n).toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        problemLaTeX = Utils.prepareDisplayMath(problemPlaintext);
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = AlgorithmsSteps.eulerPhiSteps(n);
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        // This method does not use Utils.prepareAlignMath() !
+        final StringBuilder sb = new StringBuilder("\\begin{align}").append(Utils.NEWLINE);
+        sb.append(Utils.prepareBasicMath(solutionPlaintext).replaceAll("=", "&="));
+        if (n > 1)
+            Utils.insertLaTeXNewlineSymbol(sb, sb.lastIndexOf("{align}") + 9, false);
+        sb.append("\\end{align}");
+        solutionLaTeX = sb.toString();
+    }
+}

@@ -1,0 +1,129 @@
+package Numbermat.GUI.utils;
+
+import java.awt.Color;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+import Numbermat.GUI.MainFrame;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class UserInputChecker {
+
+    private UserInputChecker() {
+        throw new IllegalStateException("UserInputChecker class should not be instantiated.");
+    }
+    
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @param lowerBound How small a number can get
+     * @param zero Is zero allowed?
+     * @return Parsed number, or null in case of error
+     */
+    public static Integer numberInput(JTextField inputField, MainFrame mainFrame, int lowerBound, boolean zero) {
+        Integer result = null;
+        try {
+            result = Integer.parseInt(inputField.getText());
+            if ((result == 0) && !zero) {
+                result = null;
+                throw new NumberFormatException("Zero is not allowed.");
+            }
+            if ((result < lowerBound) || (result > Configuration.MAX_INT)) {
+                result = null;
+                throw new NumberFormatException("Invalid range.");
+            }
+            inputField.setBackground(Color.white);
+        } catch (NumberFormatException ex) {
+            String zeroAllowed = "";
+            if ((lowerBound < 0) && (!zero))
+                zeroAllowed = " Nula není povolena.";
+            error(inputField, mainFrame,
+                    "Prosím zadejte číslo v intervalu [" + lowerBound + ", "
+                    + (Configuration.MAX_INT + 1) + ")." + zeroAllowed);
+        }
+        return result;
+    }
+    
+    public static Integer positiveNumberInput(JTextField inputField, MainFrame mainFrame) {
+        return numberInput(inputField, mainFrame, 1, false);
+    }
+    
+    public static Integer nonNegativeNumberInput(JTextField inputField, MainFrame mainFrame) {
+        return numberInput(inputField, mainFrame, 0, true);
+    }
+    
+    public static Integer nonZeroNumberInput(JTextField inputField, MainFrame mainFrame) {
+        return numberInput(inputField, mainFrame, Configuration.MIN_INT, false);
+    }
+    
+    public static Integer integerNumberInput(JTextField inputField, MainFrame mainFrame) {
+        return numberInput(inputField, mainFrame, Configuration.MIN_INT, true);
+    }
+    
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @return Natural number result or empty collection in case of error
+     */
+    public static List<Integer> positiveNumberResult(JTextField inputField, MainFrame mainFrame) {
+        List<Integer> actualResult = new ArrayList<>();
+        Integer userAnswer = positiveNumberInput(inputField, mainFrame);
+        if (userAnswer != -1)
+            actualResult.add(userAnswer);
+        return actualResult;
+    }
+    
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @return Parsed bezout coefficients or empty collection in case of error
+     */
+    public static List<Integer> bezoutResult(JTextField inputField, MainFrame mainFrame) {
+        return parse(3, inputField, mainFrame);
+    }
+    
+    public static List<Integer> pairResult(JTextField inputField, MainFrame mainFrame) {
+        return parse(2, inputField, mainFrame);
+    }
+    
+    private static List<Integer> parse(int numberOfTokens, JTextField inputField, MainFrame mainFrame) {
+        List<Integer> actualResult = new ArrayList<>();
+        try {
+            String[] tokens = inputField.getText().split("\\s+");
+            if (tokens.length != numberOfTokens)
+                throw new IllegalArgumentException("Invalid number of arguments.");
+            
+            for (int i = 0; i < numberOfTokens; ++i) {
+                int coefficient = Integer.parseInt(tokens[i]);
+                actualResult.add(coefficient);
+                if ((coefficient < Configuration.MIN_INT) ||
+                    (coefficient > Configuration.MAX_INT)) {
+                    actualResult = new ArrayList<>();
+                    throw new NumberFormatException("Invalid range.");
+                }
+            }
+            inputField.setBackground(Color.white);
+        } catch (IllegalArgumentException ex) {
+            error(inputField, mainFrame,
+                    "Prosím zadejte " + numberOfTokens + " celočíselné koeficienty oddělené mezerou.");
+        }
+        return actualResult;
+    }
+    
+    public static void error(JTextField inputField, MainFrame mainFrame, String msg) {
+        final String header = "Chybný vstup";
+        inputField.setBackground(Color.red);
+        JOptionPane.showMessageDialog(mainFrame, msg, header, JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    public static void error(MainFrame mainFrame, String msg, String header) {
+        JOptionPane.showMessageDialog(mainFrame, msg, header, JOptionPane.INFORMATION_MESSAGE);
+    }
+}

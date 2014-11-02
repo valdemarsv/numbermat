@@ -1,0 +1,87 @@
+package Numbermat.GUI.utils;
+
+import java.awt.Color;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+import Numbermat.GUI.MainFrame;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public class UserInputChecker {
+
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @return Parsed natural number or null in case of error
+     */
+    public static Integer naturalNumberInput(JTextField inputField, MainFrame mainFrame) {
+        Integer result = null;
+        try {
+            result = Integer.parseInt(inputField.getText());
+            if ((result < 0) || (result > Configuration.MAX_INT)) {
+                result = null;
+                throw new NumberFormatException("Invalid range.");
+            }
+            inputField.setBackground(Color.white);
+        } catch (NumberFormatException ex) {
+            error(inputField, mainFrame,
+                    "Prosím zadejte přirozené číslo v intervalu [0, " + (Configuration.MAX_INT + 1) + ").");
+        }
+        return result;
+    }
+    
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @return Natural number result or null in case of error
+     */
+    public static int[] naturalNumberResult(JTextField inputField, MainFrame mainFrame) {
+        int[] actualResult = null;
+        Integer userAnswer = naturalNumberInput(inputField, mainFrame);
+        if (userAnswer != null) {
+            actualResult = new int[1];
+            actualResult[0] = userAnswer;
+        }
+        return actualResult;
+    }
+    
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @return Parsed bezout coefficients or null in case of error
+     */
+    public static int[] bezoutResult(JTextField inputField, MainFrame mainFrame) {
+        int[] actualResult = null;
+        try {
+            String[] tokens = inputField.getText().split("\\s+");
+            if (tokens.length != 3)
+                throw new IllegalArgumentException("Invalid number of arguments.");
+            
+            actualResult = new int[3];
+            for (int i = 0; i < 3; ++i) {
+                actualResult[i] = Integer.parseInt(tokens[i]);
+                if ((actualResult[i] < Configuration.MIN_INT) ||
+                    (actualResult[i] > Configuration.MAX_INT)) {
+                    actualResult = null;
+                    throw new NumberFormatException("Invalid range.");
+                }
+            }
+            inputField.setBackground(Color.white);
+        } catch (IllegalArgumentException ex) {
+            error(inputField, mainFrame,
+                    "Prosím zadejte tři celočíselné koeficienty d, x, y oddělené mezerou.");
+        }
+        return actualResult;
+    }
+    
+    public static void error(JTextField inputField, MainFrame mainFrame, String msg) {
+        final String header = "Chybný vstup";
+        inputField.setBackground(Color.red);
+        JOptionPane.showMessageDialog(mainFrame, msg, header, JOptionPane.INFORMATION_MESSAGE);
+    }
+}

@@ -1,0 +1,108 @@
+package Numbermat.GUI.utils;
+
+import java.io.File;
+import java.util.prefs.Preferences;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class Configuration {
+    
+    public static final int GCD = 0;
+    public static final int BEZOUT = 1;
+    public static final int INVERSE_MOD = 2;
+    public static final int FACTORIZE = 3;
+    public static final int EULER_PHI = 4;
+    
+    public static final String[] PROBLEMS = new String[] {
+        "Největší společný dělitel",
+        "Bezoutova rovnost",
+        "Inverze modulo n",
+        "Rozklad na prvočísla",
+        "Eulerova točná funkce"
+    };
+    
+    public static final int MAX_INT = 99999999;
+    public static final int MIN_INT = -99999999;
+
+    /**
+     * Default values of bounds.
+     * Lower bounds should be powers of 2.
+     * Upper bounds should be powers of 2 minus 1.
+     * e.g. Easy ends on 127 and Medium starts on 128.
+     * (this is because of random prime generator)
+     */
+    private static int easyLowerBound = 1;
+    private static int easyToMediumBound = 127;
+    private static int mediumToHardBound = 1023;
+    private static int hardUpperBound = 4095;
+    
+    /**
+     * Default value for pdflatex.exe file.
+     * Null means automatic searching for default file location.
+     */
+    private static File pdfLaTeXFile = null;
+    
+    public static void setPreferences(Preferences preferences, String name) {
+        preferences = Preferences.userRoot().node(name);
+        if (pdfLaTeXFile != null)
+            preferences.put("pathToPDFLaTeXFile", pdfLaTeXFile.getAbsolutePath());
+        preferences.putInt("easyLowerBound", easyLowerBound);
+        preferences.putInt("easyToMediumBound", easyToMediumBound);
+        preferences.putInt("mediumToHardBound", mediumToHardBound);
+        preferences.putInt("hardUpperBound", hardUpperBound);
+    }
+    
+    public static int getEasyLowerBound() {
+        return easyLowerBound;
+    }
+
+    public static int getEasyToMediumBound() {
+        return easyToMediumBound;
+    }
+
+    public static int getMediumToHardBound() {
+        return mediumToHardBound;
+    }
+
+    public static int getHardUpperBound() {
+        return hardUpperBound;
+    }
+
+    public static void setEasyLowerBound(int easyLowerBound) {
+        if (easyLowerBound >= easyToMediumBound)
+            throw new IllegalArgumentException("Easy lower bound must be smaller than Easy/Medium bound.");
+        Configuration.easyLowerBound = easyLowerBound;
+    }
+
+    public static void setEasyToMediumBound(int easyToMediumBound) {
+        if (easyToMediumBound >= mediumToHardBound)
+            throw new IllegalArgumentException("Easy/Medium bound must be smaller than Medium/Hard bound.");
+        if (easyToMediumBound <= easyLowerBound)
+            throw new IllegalArgumentException("Easy/Medium bound must be bigger than Easy lower bound.");
+        Configuration.easyToMediumBound = easyToMediumBound;
+    }
+
+    public static void setMediumToHardBound(int mediumToHardBound) {
+        if (mediumToHardBound >= hardUpperBound)
+            throw new IllegalArgumentException("Medium/Hard bound must be smaller than Hard upper bound.");
+        if (mediumToHardBound <= easyToMediumBound)
+            throw new IllegalArgumentException("Medium/Hard bound must be bigger than Easy/Medium bound.");
+        Configuration.mediumToHardBound = mediumToHardBound;
+    }
+
+    public static void setHardUpperBound(int hardUpperBound) {
+        if (hardUpperBound <= mediumToHardBound)
+            throw new IllegalArgumentException("Hard upper bound must be bigger than Medium/Hard bound");
+        Configuration.hardUpperBound = hardUpperBound;
+    }
+    
+    public static File getPathToPDFLaTeXFile() {
+        return pdfLaTeXFile;
+    }
+
+    public static void setPathToPDFLaTeXFile(File pdfLaTeXFile) {
+        Configuration.pdfLaTeXFile = pdfLaTeXFile;
+    }
+}

@@ -1,0 +1,84 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.AlgorithmsSteps;
+import Numbermat.Pair;
+import Numbermat.Utils;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class BinomialCongruenceProblem extends MathProblem {
+    
+    private int n;
+    private int a;
+    private int m;
+    
+    public BinomialCongruenceProblem(final String difficulty) {
+        // TODO
+        easyBounds = new Pair(2, 9);
+        mediumBounds = new Pair(9, 19);
+        hardBounds = new Pair(19, 29);
+        
+        final Pair<Integer, Integer> bounds = initBounds(difficulty);
+        final int lowerBound = bounds.getFirst();
+        final int upperBound = bounds.getSecond();
+        
+        int nn, aa, mm;
+        while (true) {
+            nn = Algorithms.randInt(3, 5);
+            aa = Algorithms.randInt(lowerBound, upperBound);
+            mm = Algorithms.randPrime(lowerBound, upperBound);
+            if (!difficulty.equals("Lehká")) {
+                nn = Algorithms.randInt(3, 7);
+                try {
+                    final Pair<Integer, Integer> primes = Algorithms.randPrimes(2, 7, 5, 13);
+                    mm = primes.getFirst() * primes.getSecond();
+                } catch (RuntimeException ex) {
+                    // do nothing
+                }
+            }
+            if (!Algorithms.binomialCongruence(nn, aa, mm).isEmpty())
+                break;
+        }
+        setVariables(nn, aa, mm);
+    }
+    
+    public BinomialCongruenceProblem(final int nn, final int aa, final int mm) {
+        setVariables(nn, aa, mm);
+    }
+    
+    private void setVariables(final int nn, final int aa, final int mm) {
+        n = nn;
+        a = aa;
+        m = mm;
+        result = Algorithms.binomialCongruence(n, a, m);
+        prepareAll();
+    }
+
+    // TODO TODO
+    @Override
+    protected void prepareProblemPlaintext() {
+        final StringBuilder lineEnd = AlgorithmsSteps.buildModLineEnd(m);
+        problemPlaintext = AlgorithmsSteps.buildBinomialCongruence(1, 'x', n, 0, -a, lineEnd).toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        final String tmp = Utils.prepareCongruencesMath(problemPlaintext);
+        problemLaTeX = Utils.prepareDisplayMath(tmp).toString();
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = AlgorithmsSteps.binomialCongruenceSteps(n, a, m);
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        solutionLaTeX = Utils.prepareBasicMath(solutionPlaintext);
+        solutionLaTeX = Utils.prepareCongruencesMath(solutionLaTeX);
+        solutionLaTeX = Utils.prepareAlignMath(solutionLaTeX);
+    }
+}

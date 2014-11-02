@@ -1,0 +1,82 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.AlgorithmsSteps;
+import Numbermat.Pair;
+import Numbermat.Utils;
+import java.util.Set;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class QuadraticCongruenceSimpleProblem extends MathProblem {
+
+    private int a;
+    private int m;
+    
+    public QuadraticCongruenceSimpleProblem(String difficulty) {
+        easyBounds = new Pair(2, 39);
+        mediumBounds = new Pair(11, 99);
+        hardBounds = new Pair(11, 199);
+        
+        Pair<Integer, Integer> bounds = initBounds(difficulty);
+        int lowerBound = bounds.getFirst();
+        int upperBound = bounds.getSecond();
+        
+        int aa, mm;
+        while (true) {
+            aa = Algorithms.randInt(lowerBound, upperBound);
+            mm = Algorithms.randPrime(lowerBound, upperBound);
+            if (!difficulty.equals("Lehká")) {
+                int p = Algorithms.randPrime(2, 7);
+                int q = Algorithms.randPrime(5, 100/p);
+                mm = p * q;
+            }
+            if (!Algorithms.quadraticCongruenceSimple(aa, mm).isEmpty())
+                break;
+        }
+        setVariables(aa, mm);
+    }
+    
+    public QuadraticCongruenceSimpleProblem(int aa, int mm) {
+        setVariables(aa, mm);
+    }
+    
+    private void setVariables(int aa, int mm) {
+        a = aa;
+        m = mm;
+        Set<Pair<Integer, Integer>> solution = Algorithms.quadraticCongruenceSimple(a, m);
+        result = Algorithms.quadraticCongruenceConvertSolution(solution);
+        prepareAll();
+    }
+    
+    @Override
+    protected void prepareProblemPlaintext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("x^2 ≡ ").append(a).append(" (mod ");
+        sb.append(m).append(")").append(Utils.NEWLINE);
+        problemPlaintext = sb.toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("x^2 \\equiv ").append(a).append(" \\pmod{");
+        sb.append(m).append("}\\\\").append(Utils.NEWLINE);
+        problemLaTeX = sb.toString();
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = AlgorithmsSteps.quadraticCongruenceSimpleSteps('x', a, m);
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        solutionLaTeX = Utils.prepareBasicMath(solutionPlaintext);
+        solutionLaTeX = Utils.prepareCongruencesMath(solutionLaTeX);
+        solutionLaTeX = Utils.prepareFractionsMath(solutionLaTeX);
+        solutionLaTeX = Utils.prepareAlignedMath(solutionLaTeX);
+    }
+}

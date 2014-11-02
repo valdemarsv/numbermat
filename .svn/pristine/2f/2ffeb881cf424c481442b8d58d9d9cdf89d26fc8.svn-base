@@ -1,0 +1,67 @@
+package Numbermat.Problems;
+
+import Numbermat.Pair;
+import java.util.List;
+
+/**
+ * Generic class for math problem.
+ * 
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public abstract class MathProblem {
+    
+    protected static Pair<Integer, Integer> easyBounds;
+    protected static Pair<Integer, Integer> mediumBounds;
+    protected static Pair<Integer, Integer> hardBounds;
+    
+    protected String problemPlaintext;
+    protected String problemLaTeX;
+    protected String solutionPlaintext;
+    protected String solutionLaTeX;
+    protected List<Integer> result;
+    
+    protected abstract void prepareProblemPlaintext();
+    protected abstract void prepareProblemLaTeX();
+    protected abstract void prepareSolutionPlaintext();
+    protected abstract void prepareSolutionLaTeX();
+    
+    protected void prepareAll() {
+        prepareProblemPlaintext();
+        prepareProblemLaTeX();
+        prepareSolutionPlaintext();
+        prepareSolutionLaTeX();
+    }
+    
+    public String getProblemPlaintext() {
+        return problemPlaintext;
+    }
+
+    public String getProblemLaTeX() {
+        return problemLaTeX;
+    }
+
+    public String getSolutionPlaintext() {
+        return solutionPlaintext;
+    }
+
+    public String getSolutionLaTeX() {
+        return solutionLaTeX;
+    }
+    
+    public List<Integer> getResult() {
+        return result;
+    }
+    
+    protected static Pair<Integer, Integer> initBounds(String difficulty) {
+        switch (difficulty) {
+            case "Lehká":
+                return easyBounds;
+            case "Střední":
+                return mediumBounds;
+            case "Těžká":
+                return hardBounds;
+            default:
+                throw new IllegalArgumentException("Unknown difficulty.");
+        }
+    }
+}

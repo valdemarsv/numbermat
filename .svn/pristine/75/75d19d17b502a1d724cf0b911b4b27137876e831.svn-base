@@ -1,0 +1,93 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.GUI.utils.Configuration;
+import Numbermat.Pair;
+import Numbermat.Utils;
+import java.util.ArrayList;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class LinearCongurenceProblem extends MathProblem {
+    
+    private int a;
+    private int b;
+    private int n;
+    
+    public LinearCongurenceProblem(String difficulty) {
+        Pair<Integer, Integer> bounds = Configuration.initBounds(difficulty);
+        int lowerBound = bounds.getFirst();
+        int upperBound = bounds.getSecond();
+        int a1 = Algorithms.randInt(lowerBound, upperBound);
+        while (a1 == 0)
+            a1 = Algorithms.randInt(lowerBound, upperBound);
+        int b1 = Algorithms.randInt(lowerBound, upperBound);
+        int n1 = Algorithms.randInt(lowerBound, upperBound);
+        while (n1 == 0)
+            a1 = Algorithms.randInt(lowerBound, upperBound);
+        setVariables(a1, b1, n1);
+    }
+    
+    public LinearCongurenceProblem(int a1, int b1, int n1) {
+        setVariables(a1, b1, n1);
+    }
+    
+    private void setVariables(int a1, int b1, int n1) {
+        a = a1;
+        b = b1;
+        n = n1;
+        Pair<Integer, Integer> solution = Algorithms.linearCongruence(a, b, n);
+        result = new ArrayList(2);
+        result.add(solution.getFirst());
+        result.add(solution.getSecond());
+        prepareAll();
+    }
+
+    @Override
+    protected void prepareProblemPlaintext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(a).append("x ≡ ").append(b).append(" (mod ");
+        sb.append(n).append(")").append(Utils.NEWLINE);
+        problemPlaintext = sb.toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        StringBuilder sb = new StringBuilder("$");
+        sb.append(a).append("x \\equiv ").append(b).append(" \\pmod{");
+        sb.append(n).append("}$");
+        problemLaTeX = sb.toString();
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = Algorithms.linearCongruenceSteps(a, b, n);
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        String solutionCopy = solutionPlaintext.replaceAll("\\*", "\\\\cdot");
+        solutionCopy = solutionCopy.replaceAll(String.valueOf(a), "\\\\textcolor{red}{" + a + "}");
+        solutionCopy = solutionCopy.replaceAll(String.valueOf(a % n), "\\\\textcolor{red}{" + a % n + "}");
+        solutionCopy = solutionCopy.replaceAll(String.valueOf(b), "\\\\textcolor{blue}{" + b + "}");
+        solutionCopy = solutionCopy.replaceAll(String.valueOf(b % n), "\\\\textcolor{blue}{" + b % n + "}");
+        solutionCopy = solutionCopy.replaceAll(String.valueOf(n), "\\\\textcolor{OliveGreen}{" + n + "}");
+        solutionCopy = solutionCopy.replaceAll("=", "&=");
+        solutionCopy = solutionCopy.replaceAll("≡", "&\\\\equiv");
+        solutionCopy = solutionCopy.replaceAll("\\(mod ", "\\\\pmod{");
+        solutionCopy = solutionCopy.replaceAll("\\)" + Utils.NEWLINE, "}" + Utils.NEWLINE);
+        solutionCopy = solutionCopy.replace("|", "\\mid");
+        solutionCopy = solutionCopy.replace("∤", "\\nmid");
+        solutionCopy = solutionCopy.replace("Kongruence", "\\text{Kongruence");
+        solutionCopy = solutionCopy.replace("řešení.", "řešení.}");
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("\\begin{align}").append(Utils.NEWLINE);
+        sb.append(solutionCopy);
+        Utils.insertLaTeXNewlineSymbol(sb, sb.lastIndexOf("{align}") + 9, false);
+        sb.append("\\end{align}");
+        solutionLaTeX = sb.toString();
+    }
+}

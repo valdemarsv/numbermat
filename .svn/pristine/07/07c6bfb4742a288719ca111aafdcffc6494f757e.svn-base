@@ -1,0 +1,59 @@
+package Numbermat;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.math.BigInteger;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public class Main {
+
+    public static void main(String[] args) {
+        test();
+    }
+    
+    public static BufferedImage concatImages(BufferedImage img1, BufferedImage img2) {
+        int widthImg1 = img1.getWidth();
+        int heightImg1 = img1.getHeight();
+        int widthImg2 = img2.getWidth();
+        int heightImg2 = img2.getHeight();
+        int widthResult = (widthImg1 > widthImg2) ? widthImg1 : widthImg2;
+        int heightResult = heightImg1 + heightImg2;
+
+        BufferedImage img = new BufferedImage(widthResult, heightResult, BufferedImage.TYPE_INT_RGB);
+        Graphics2D drawer = img.createGraphics();
+        drawer.setBackground(Color.WHITE);
+        drawer.clearRect(0,0,widthResult,heightResult);
+
+        img.createGraphics().drawImage(img1, 0, 0, null); // 0, 0 are the x and y positions
+        img.createGraphics().drawImage(img2, 0, heightImg1, null);
+        return img;
+
+        //File final_image = new File("C:\\Users\\Valdo\\Downloads\\jlr\\final.png");
+        //ImageIO.write(img, "jpeg", final_image);
+    }
+    
+    public static void test() {
+        int[] primes = new int[] {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41,
+            43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101};
+        for (int a = 2; a <= 30; a++) {
+            for (int i = 0; i < primes.length; i++) {
+                int p = primes[i];
+                BigInteger bigA = new BigInteger(((Integer)a).toString());
+                BigInteger bigP = new BigInteger(((Integer)p).toString());
+                if ((bigA.modPow(bigP, bigP)).equals(new BigInteger(((Integer)1).toString())))
+                    System.out.println(a + ", " + p);
+            }
+        }
+    }
+    
+    /* Concatenate final part of the image 
+        StringBuilder finalPart = new StringBuilder();
+        finalPart.append(GCDProblem.getProblemLaTeX());
+        finalPart.insert(finalPart.lastIndexOf("\\]"), GCDProblem.getGcd());
+        BufferedImage solution2 = Utils.createLaTeXImage(finalPart.toString());
+        BufferedImage result = Main.concatImages(solution, solution2); */
+}

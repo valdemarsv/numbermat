@@ -1,0 +1,1049 @@
+package Numbermat;
+
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+
+/**
+ * Methods for computations and math problem solving.
+ * 
+ * @author Valdemar Svabensky <395868(at)mail(dot)muni(dot)cz>
+ */
+public final class Algorithms {
+    
+    private Algorithms() {
+        throw new IllegalStateException(this.getClass().getName() + " class should not be instantiated.");
+    }
+
+    /**
+     * FOR loops upper limit.
+     */
+    public static final int FOR_LOOP_ATTEMPTS = 1000;
+    
+    /**
+     * @param n Integer
+     * @return Is 'n' prime?
+     */
+    public static boolean isPrime(final int n) {
+        if (n < 2)
+            return false;
+        if (n == 2)
+            return true;
+        if (n % 2 == 0)
+            return false;
+        
+        for (int i = 3; i <= Math.sqrt(n) + 1; i += 2) {
+            if (n % i == 0)
+                return false;
+        }
+        return true;
+    }
+    
+    /**
+     * @param a Integer
+     * @param b Integer
+     * @return Are 'a', 'b' coprime integers?
+     */
+    public static boolean isCoprime(final int a, final int b) {
+        return gcd(a, b) == 1;
+    }
+    
+    /**
+     * @param n Integer
+     * @return Is 'n' a power of 2?
+     */
+    public static boolean isPowerOf2(final int n) {
+        return (n != 0) && ((n & (n - 1)) == 0);
+    }
+    
+    /**
+     * @param n Integer
+     * @return Is 'n' a power of 4?
+     */
+    public static boolean isPowerOf4(final int n) {
+        return (isPowerOf2(n)) && ((getNumberOfBits(n) % 2) == 1);
+    }
+    
+    /**
+     * @param n Integer
+     * @return Number of bits needed to express 'n' in binary
+     */
+    public static int getNumberOfBits(final int n) {
+        if (n == 0)
+            return 1;
+        if (n < 0)
+            return 1 + getNumberOfBits(-n); // sign bit
+        
+        return Integer.SIZE - Integer.numberOfLeadingZeros(n);
+    }
+    
+    /**
+     * Generates a pseudo-random integer between 'min' and 'max', inclusive.
+     * The difference between 'min' and 'max' can be at most Integer.MAX_VALUE - 1.
+     * @param min Minimum value
+     * @param max Maximum value >= min
+     * @param zero Is zero allowed?
+     * @return Integer in range [min, max]
+     */
+    public static int randInt(final int min, final int max, final boolean zero) {
+        notSmallerThanCheck(max, min);
+        overflowCheck(min, max);
+        if ((min == 0) && (max == 0) && !zero)
+            throw new IllegalArgumentException("Bounds allow to generate only 0, but it was not allowed.");
+         
+        final Random rand = new Random();
+        int n = rand.nextInt((max - min) + 1) + min;
+        if (!zero) {
+            while (n == 0)
+                n = rand.nextInt((max - min) + 1) + min;
+        }
+        return n;
+    }
+    
+    /**
+     * Generates a pseudo-random integer between 'min' and 'max', inclusive.
+     * The difference between 'min' and 'max' can be at most Integer.MAX_VALUE - 1.
+     * @param min Minimum value
+     * @param max Maximum value >= min
+     * @return Integer in range [min, max]
+     */
+    public static int randInt(final int min, final int max) {
+        return randInt(min, max, true);
+    }
+    
+    /**
+     * Generates a pseudo-random prime between 'min' and 'max', inclusive.
+     * The difference between 'min' and 'max' can be at most Integer.MAX_VALUE - 1.
+     * @param min Minimum value. Non-negative integer.
+     * @param max Maximum value >= min. Cannot be smaller than 2.
+     * @return Prime in range [min, max]
+     * @throws RuntimeException If a prime cannot be generated in given range
+     */
+    public static int randPrime(final int min, final int max) {
+        notNegativeCheck(min);
+        notSmallerThanCheck(max, 2);
+        notSmallerThanCheck(max, min);
+        overflowCheck(min, max);
+
+        int randomBitLength;
+        do {
+            randomBitLength = getNumberOfBits(randInt(min, max));
+        } while (randomBitLength < 2);
+        
+        final Random rand = new SecureRandom();
+        BigInteger n;
+        for (int i = 0; i < FOR_LOOP_ATTEMPTS; ++i) {
+            n = BigInteger.probablePrime(randomBitLength, rand);
+            if ((n.intValue() >= min) && (n.intValue() <= max))
+                return n.intValue();
+        }
+        throw new RuntimeException("Unable to generate a prime in range [" + min + ", " + max + "].");
+    }
+    
+    /**
+     * Generates a pseudo-random pair of coprime integers between 'min' and 'max', inclusive.
+     * The difference between 'min' and 'max' can be at most Integer.MAX_VALUE - 1.
+     * @param min Minimum value. Non-negative integer.
+     * @param max Maximum value >= min
+     * @return Pair of coprime integers in range [min, max]
+     * @throws RuntimeException If a pair of coprimes cannot be generated in given range
+     */
+    public static Pair<Integer, Integer> randCoprime(final int min, final int max) {
+        notNegativeCheck(min);
+        notSmallerThanCheck(max, min);
+        overflowCheck(min, max);
+        
+        Pair<Integer, Integer> test = randCoprimeTry(randInt(min, max), min, max);
+        if (test.isEmpty())
+            test = randCoprimeTry(randPrime(min, max), min, max);
+        if (!test.isEmpty())
+            return test;
+        throw new RuntimeException("Unable to generate a pair of coprimes in range [" + min + ", " + max + "].");
+    }
+    
+    private static Pair<Integer, Integer> randCoprimeTry(final int a, final int min, final int max) {
+        int b = randInt(min, max);
+        for (int i = 0; i < FOR_LOOP_ATTEMPTS; ++i) {
+            if (isCoprime(a, b))
+                return new Pair<>(a, b);
+            b = randInt(min, max);
+        }
+        return new Pair<>();
+    }
+    
+    /**
+     * Generates a pseudo-random number which is a product of primes between 'min_i' and 'max_i', inclusive.
+     * The difference between 'min_i' and 'max_i' can be at most Integer.MAX_VALUE - 1.
+     * Let 'p' be the first prime, 'q' the second prime.
+     * @param min1 Minimum value for p. Non-negative integer.
+     * @param max1 Maximum value for p. Cannot be smaller than min1. Cannot be smaller than 2.
+     * @param min2 Minimum value for q. Non-negative integer.
+     * @param max2 Maximum value for q. Cannot be smaller than min2. Cannot be smaller than 2.
+     * @return n = p * q
+     */
+    public static int productOfTwoPrimes(final int min1, final int max1, final int min2, final int max2) {
+        notNegativeCheck(min1);
+        notSmallerThanCheck(max1, 2);
+        notSmallerThanCheck(max1, min1);
+        overflowCheck(min1, max1);
+        notNegativeCheck(min2);
+        notSmallerThanCheck(max2, 2);
+        notSmallerThanCheck(max2, min2);
+        overflowCheck(min2, max2);
+        
+        int n;
+        try {
+            final Pair<Integer, Integer> primes = randPrimes(min1, max1, min2, max2);
+            n = primes.getFirst() * primes.getSecond();
+        } catch (RuntimeException ex) {
+            n = 7 * 13;
+        }
+        return n;
+    }
+    
+    private static Pair<Integer, Integer> randPrimes(final int min1, final int max1, final int min2, final int max2) {
+        final int defaultP = 7;
+        final int defaultQ = 13;
+        
+        int p = 0;
+        int q = 0;
+        try {
+            p = randPrime(min1, max1);
+            q = randPrime(min2, max2);
+        } catch (RuntimeException ex) {
+            if ((min1 <= defaultP) && (max1 >= defaultP))
+                p = defaultP;
+            if ((min2 <= defaultQ) && (max2 >= defaultQ))
+                q = defaultQ;
+        }
+        if ((p != 0) && (q != 0))
+            return new Pair<>(p, q);
+        throw new RuntimeException("Unable to generate a pair of primes in the given range.");
+    }
+     
+    /**
+     * Euclidean algorithm for finding the greatest common divisor of two integers.
+     * See Handbook of Applied Cryptography, sec. 2.4, page 66 for details.
+     * @param a Integer
+     * @param b Integer
+     * @return gcd(a,b)
+     */
+    public static int gcd(int a, int b) {
+        if (a < 0)
+            return gcd(-a, b);
+        if (b < 0)
+            return gcd(a, -b);
+        if (a < b)
+            return gcd(b, a);
+        
+        while (b > 0) {
+            int r = a % b;
+            a = b;
+            b = r;
+        }
+        return a;
+    }
+    
+    /**
+     * Extended Euclidean algorithm for solving Bezout's identity.
+     * See Handbook of Applied Cryptography, sec. 2.4, page 67 for details.
+     * @param a Non-negative integer, a >= b
+     * @param b Non-negative integer
+     * @return List [d, x, y] where d = gcd(a,b) and x, y such that ax + by = d
+     */
+    public static List<Integer> bezout(int a, int b) {
+        notNegativeCheck(a);
+        notNegativeCheck(b);
+        notSmallerThanCheck(a, b);
+        if (b == 0)
+            return new ArrayList(Arrays.asList(a, 1, 0));
+        
+        int x, y, q, r;
+        int x1 = 0;
+        int x2 = 1;
+        int y1 = 1;
+        int y2 = 0;
+        while (b > 0) {
+            q = a/b;
+            r = a - q*b;
+            x = x2 - q*x1;
+            y = y2 - q*y1;
+            a = b;
+            b = r;
+            x2 = x1;
+            x1 = x;
+            y2 = y1;
+            y1 = y;
+        }
+        return new ArrayList(Arrays.asList(a, x2, y2));
+    }
+    
+    /**
+     * @param n Non-zero integer
+     * @return List of all positive divisors of 'n' in ascending order
+     */
+    public static List<Integer> divisors(final int n) {
+        notZeroCheck(n);
+        if (n < 0)
+            return divisors(-n);
+        
+        final List<Integer> divisors = new ArrayList<>(Arrays.asList(1));
+        if (n == 1)
+            return divisors;
+        
+        if (!isPrime(n)) {
+            int i = 2;
+            int increment = 1;
+            if (n % 2 == 1) {
+                i = 3;
+                increment = 2; // test odd ones only
+            }
+            
+            for (; i <= n/2; i += increment) {
+                if (n % i == 0)
+                    divisors.add(i);
+            }
+        }
+        divisors.add(n);
+        return divisors;
+    }
+    
+    /**
+     * @param a Non-zero integer
+     * @param b Non-zero integer
+     * @return List of all positive divisors of both 'a' and 'b' in ascending order
+     */
+    public static List<Integer> commonDivisors(final int a, final int b) {
+        notZeroCheck(a);
+        notZeroCheck(b);
+        return listIntersection(divisors(a), divisors(b));
+    }
+    
+    private static <T> List<T> listIntersection(List<T> list1, List<T> list2) {
+        List<T> list = new ArrayList<>();
+        for (T t : list1) {
+            if (list2.contains(t))
+                list.add(t);
+        }
+        return list;
+    }
+    
+    /**
+     * Prime factorization.
+     * @param n Non-negative integer
+     * @return List of pairs (factor, exponent)
+     */
+    public static List<Pair<Integer, Integer>> factorize(int n) {
+        notNegativeCheck(n);
+        final List<Pair<Integer, Integer>> factors = new ArrayList<>();
+        if (n < 4) {
+            factors.add(new Pair<>(n, 1));
+            return factors;
+        }
+        
+        for (int i = 2; i <= n; ++i) {
+            final Pair<Integer, Integer> factor = new Pair<>(i, 0);
+            boolean factorFound = false;
+            while (n % i == 0) {
+                factorFound = true;
+                factor.setSecond(factor.getSecond() + 1);
+                n /= i;
+            }
+            if (factorFound)
+                factors.add(factor);
+        }
+        return factors;
+    }
+    
+    /**
+     * Euler's totient function.
+     * @param n Positive integer
+     * @return Value of Euler's totient function for n
+     */
+    public static int eulerPhi(final int n) {
+        positiveCheck(n);
+        if (n == 1)
+            return 1;
+        
+        int phi = 1;
+        final List<Pair<Integer, Integer>> factors = factorize(n);
+        for (int i = 0; i < factors.size(); ++i) {
+            final int prime = factors.get(i).getFirst();
+            final int exponent = factors.get(i).getSecond();
+            phi *= prime - 1;
+            phi *= (int)Math.pow(prime, exponent - 1);
+        }
+        return phi;
+    }
+
+    /**
+     * Mods 'a' to closest positive integer modulo 'n'.
+     * Example: -74 % 5 = -4 % 5 = 1
+     * @param a Integer
+     * @param n Positive integer
+     * @return a % n, smallest possible positive solution
+     */
+    public static int normalizeIntModulo(int a, final int n) {
+        positiveCheck(n);
+        a = a % n;
+        if (a < 0)
+            a = a + n;
+        return a;
+    }
+    
+    /**
+     * Solving a congruence ax ≡ b (mod n).
+     * @param a Integer
+     * @param b Integer
+     * @param n Positive integer
+     * @return Pair (solution, modulus) OR empty pair if no solutions exist OR pair (0, 1) if infinite solutions exist.
+     */
+    public static Pair<Integer, Integer> linearCongruence(int a, int b, final int n) {
+        positiveCheck(n);
+        a = normalizeIntModulo(a, n);
+        b = normalizeIntModulo(b, n);
+        if ((a == 0) && (b == 0))
+            return new Pair<>(0, 1);
+        
+        final int numberOfSolutions = gcd(a, n);
+        if (b % numberOfSolutions != 0)
+            return new Pair<>();
+        
+        int bezoutCoefficientA; // coeffient r such that ra + sn = gcd(a, n)
+        if (a > n)
+            bezoutCoefficientA = bezout(a, n).get(1);
+        else
+            bezoutCoefficientA = bezout(n, a).get(2);
+
+        final int shiftedModulus = n / numberOfSolutions;
+        int x = (bezoutCoefficientA * b) / numberOfSolutions;
+        x = normalizeIntModulo(x, shiftedModulus);
+        return new Pair<>(x, shiftedModulus);
+    }
+
+    /**
+     * Solving a system of 'i' congruences of type a_i x ≡ b_i (mod n_i).
+     * See http://en.wikipedia.org/wiki/Linear_congruence_theorem#System_of_linear_congruences
+     * @param count Number of equations, positive integer
+     * @param aList List of integers
+     * @param bList List of integers
+     * @param nList List of positive integers
+     * @return Pair (solution, modulus) OR empty pair if no solutions exist OR pair (0, 1) if infinite solutions exist.
+     */
+    public static Pair<Integer, Integer> linearCongruenceSystem(final int count,
+            final List<Integer> aInputList, final List<Integer> bInputList, final List<Integer> nInputList) {
+        
+        positiveCheck(count);
+        if (aInputList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in aInputList");
+        if (bInputList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in bInputList");
+        if (nInputList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in nInputList");
+        
+        final List<Integer> aList = new ArrayList<>(aInputList);
+        final List<Integer> bList = new ArrayList<>(bInputList);
+        final List<Integer> nList = new ArrayList<>(nInputList);
+        for (int i = 0; i < count; ++i) {
+            final int ai = aList.get(i);
+            final int bi = bList.get(i);
+            final int ni = nList.get(i);
+            positiveCheck(ni);
+            aList.set(i, normalizeIntModulo(ai, ni));
+            bList.set(i, normalizeIntModulo(bi, ni));
+        }
+        
+        final Pair<Integer, Integer> solution = new Pair<>();
+        for (int i = 0; i < count; ++i) {
+            final Pair<Integer, Integer> partial = linearCongruence(aList.get(i), bList.get(i), nList.get(i));
+            if (partial.isEmpty()) // no solutions for whole system
+                return new Pair<>(); 
+            if (partial.equals(new Pair<>(0, 1))) { // infinite solutions for equation 'i'
+                if ((solution.isEmpty()) && (lastForCycle(i, count)))
+                    return new Pair<>(0, 1);
+                else
+                    continue;
+            }
+            
+            // xi == partialX + partialM * k
+            final int partialX = partial.getFirst();
+            final int partialM = partial.getSecond();
+            if (solution.isEmpty()) {
+                solution.setFirst(partialX);
+                solution.setSecond(partialM);
+            } else {
+                solution.setFirst(solution.getFirst() + solution.getSecond() * partialX);
+                solution.setSecond(solution.getSecond() * partialM);
+            }
+            
+            if (!lastForCycle(i, count)) {
+                bList.set(i+1, bList.get(i+1) - (aList.get(i+1) * solution.getFirst()));
+                aList.set(i+1, aList.get(i+1) * solution.getSecond());
+            }
+        }
+        return solution;
+    }
+    
+    /**
+     * @param i Cycle counter
+     * @param terminator Cycle stop value
+     * @return True e.g. when i == 9 in cycle: for (int i = 0; i < 10; ++i)
+     */
+    public static boolean lastForCycle(final int i, final int terminator) {
+        return i == terminator - 1;
+    }
+
+    /**
+     * @param n Integer > 1
+     * @return List of elements of unit group Zn^× in ascending order
+     */
+    public static List<Integer> elementsOfUnitGroup(final int n) {
+        notSmallerThanCheck(n, 2);
+        final List<Integer> result = new ArrayList<>();
+        if (isPrime(n)) {
+            for (int i = 1; i < n; ++i)
+                result.add(i);
+        } else {
+            for (int i = 1; i < n; ++i)
+                if (isCoprime(i, n))
+                    result.add(i);
+        }
+        return result;
+    }
+    
+    /**
+     * @param element Positive integer
+     * @param n Integer > 1
+     * @return Order of element 'element' in group Zn×
+     */
+    public static int unitGroupElementOrder(final int element, final int n) {
+        positiveCheck(element);
+        notSmallerThanCheck(n, 2);
+        if (element == 1)
+            return 1;
+        
+        final List<Integer> unitGroup = elementsOfUnitGroup(n);
+        if (!unitGroup.contains(element))
+            throw new IllegalArgumentException(element + " is not contained in group Z" + n + "×");
+        
+        final List<Integer> possibleElementOrders = divisors(unitGroup.size());
+        for (int i = 0; i < possibleElementOrders.size(); ++i) {
+            final int currentOrder = possibleElementOrders.get(i);
+            if (modPow(element, currentOrder, n) == 1)
+                return currentOrder;
+        }
+        return Integer.MAX_VALUE;
+    }
+    
+    /**
+     * Modular exponentiation.
+     * @param base Integer
+     * @param exp Non-negative integer
+     * @param mod Positive integer
+     * @return (base^exp) mod (mod)
+     */
+    public static int modPow(int base, final int exp, final int mod) {
+        notNegativeCheck(exp);
+        positiveCheck(mod);
+        base = normalizeIntModulo(base, mod);
+        if (mod == 1)
+            return 0;
+        if (base == 0)
+            return ((exp == 0) ? 1 : 0);
+        if (base == 1)
+            return 1;
+        if (base == -1)
+            return ((exp % 2 == 0) ? 1 : -1 + mod);
+                    
+        final BigInteger bigBase = intToBigInteger(base);
+        final BigInteger bigExp = intToBigInteger(exp);
+        final BigInteger bigMod = intToBigInteger(mod);
+        return bigBase.modPow(bigExp, bigMod).intValue();
+    }
+    
+    private static BigInteger intToBigInteger(final int n) {
+        return new BigInteger(((Integer)n).toString());
+    }
+    
+    /**
+     * Computes the Legendre Symbol.
+     * @param a Integer
+     * @param p Odd prime
+     * @return 1, 0 or -1
+     */
+    public static int legendreSymbol(final int a, final int p) {
+        isPrimeCheck(p, true);
+        int value = modPow(a, (p-1)/2, p);
+        if (value == p - 1)
+            value = -1;
+        return value;
+    }
+    
+    /**
+     * @param n Integer
+     * @return Is given integer a square of another integer?
+     */
+    public static boolean isPerfectSquare(final int n) {
+        if (n < 0)
+            return false;
+        final int test = (int)(Math.sqrt(n));
+        return (test * test) == n;
+    }
+    
+    /**
+     * @param base Positive integer > 1
+     * @param limit Positive integer > 1
+     * @return The highest power of 'base' smaller than 'limit'
+     */
+    public static int findHighestPowerLessThan(final int base, final int limit) {
+        notSmallerThanCheck(base, 2);
+        notSmallerThanCheck(limit, 2);
+        int x = 1;
+        while ((x * base) < limit)
+            x *= base;
+        return x;
+    }
+    
+    /**
+     * @param start Integer
+     * @return The next power of 4 from 'start' or start itself if it is a power of 4
+     */
+    public static int findNextPowerOf4(final int start) {
+        if (start < 1)
+            return 1;
+        if (isPowerOf4(start))
+            return start;
+        
+        return 4 * findHighestPowerLessThan(4, start);
+    }
+    
+    /**
+     * Solves the quadratic congruence of form x^2 ≡ a (mod m).
+     * @param a Integer
+     * @param m Positive integer
+     * @return List of solutions ending with modulus: [x1, x2, ..., xn, m]
+     */
+    public static List<Integer> quadraticCongruenceSimple(int a, int m) {
+        positiveCheck(m);
+        a = normalizeIntModulo(a, m);
+        if (a == 0) {
+            if (isPerfectSquare(m))
+                m = (int)Math.sqrt(m);
+            else if ((isPowerOf2(m)) && (m > 2))
+                m = (int)Math.sqrt(findNextPowerOf4(m));
+            else if ((m % 2 == 0) && ((m/2 * m/2) % m == 0))
+                m = m/2;
+            return new ArrayList<>(Arrays.asList(0, m)); // solution 0 (mod m)
+        }
+        
+        // Handle powers of 2 separately :(
+        if (isPowerOf2(m)) {
+            if (m < 16) {
+                if (a < 2)
+                    return new ArrayList<>(Arrays.asList(a, 2));
+                if ((a == 4) && (m == 8))
+                    return new ArrayList<>(Arrays.asList(2, 4));
+                
+                return new ArrayList<>();
+            }
+            
+            // Only 0, 1, 4, 9, 16, 17, 25, 32, 33... are quadratic residues mod power of 2
+            if (a % 8 == 1)
+                return quadraticCongruenceSimpleSolve(a, m);
+            if (!isPowerOf4(a))
+                return new ArrayList<>();
+            
+            m = m/2;
+            final int x1 = (int)Math.sqrt(a);
+            final int limit = findHighestPowerLessThan(4, m);
+            if (a == limit)
+                return new ArrayList<>(Arrays.asList(x1, (int)Math.sqrt(findNextPowerOf4(m))));
+            if ((a == limit/4) && (isPowerOf4(m)))
+                return new ArrayList<>(Arrays.asList(x1, (int)Math.sqrt(m)));
+            
+            m = m/2;
+            final List<Integer> result = new ArrayList<>();
+            quadraticCongruenceSimpleFillSolution(result, x1, m);
+            result.add(m);
+            return result;
+        }
+        
+        /**
+         * Let m = m1 * m2 * ... * mn = p1^e1 * p2^e2 * ... * pn^en.
+         * The input congruence is equivalent to system of congruences:
+         * x^2 ≡ a (mod p1), x^2 ≡ a (mod p2), ..., x^2 ≡ a (mod pn).
+         * (The exponents are negligible, since p^e|a => p|a.)
+         * Each subcongruence must have a solution (the corresponding Legendre symbol is 0 or 1).
+         */
+        final List<Pair<Integer,Integer>> factorization = factorize(m);
+        for (int i = 0; i < factorization.size(); ++i) {
+            final int pi = factorization.get(i).getFirst();
+            if (pi == 2)
+                continue;
+            if (legendreSymbol(a, pi) == -1) // => no solutions to whole system
+                return new ArrayList<>();
+        }
+        
+        // Try to find solution with halved modulus
+        if (m % 2 == 0) {
+            boolean halfModSolution = true;
+            final int halfMod = m/2;
+            final List<Integer> test = quadraticCongruenceSimpleSolve(a, halfMod);
+            for (int i = 0; i < test.size() - 1; ++i) {
+                final int testXi = test.get(i) + halfMod;
+                if (((testXi * testXi) % m) != a) {
+                    halfModSolution = false;
+                    break;
+                }
+            }
+            if (halfModSolution) {
+                if (a != halfMod)
+                    return test;
+                final List<Integer> result = new ArrayList<>();
+                for (int i = 0; i < test.size() - 1; ++i) {
+                    final int x1 = test.get(i) + halfMod;
+                    quadraticCongruenceSimpleFillSolution(result, x1, m);
+                    if (result.size() == 2)
+                        break;
+                }
+                if (!result.isEmpty()) {
+                    Collections.sort(result);
+                    result.add(m);
+                }
+                return result;
+            }
+        }
+        
+        return quadraticCongruenceSimpleSolve(a, m);
+    }
+    
+    /**
+     * Helper method only for quadraticCongruenceSimple().
+     * Tries to find solution by force.
+     */
+    private static List<Integer> quadraticCongruenceSimpleSolve(int a, final int m) {
+        a = normalizeIntModulo(a, m);
+        int testA = a;
+        int testM = m;
+        if (isPowerOf2(m))
+            testM = m/2;
+        
+        final List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < testM; ++i) {
+            if (isPerfectSquare(testA)) {
+                final int x1 = (int)Math.sqrt(testA);
+                if (modPow(x1, 2, m) == a)
+                    quadraticCongruenceSimpleFillSolution(result, x1, testM);
+                if (result.size() == 4)
+                    break;
+            }
+            testA += testM;
+        }
+        
+        if (!result.isEmpty()) {
+            Collections.sort(result);
+            result.add(testM);
+        }
+        if ((result.size() == 5) && (m % 2 == 0))  // 5 = 4 + 1 for mod
+            return binomialCongruenceRuleOut(result);
+        return result;
+    }
+    
+    /**
+     * Helper method only for quadraticCongruenceSimple().
+     */
+    private static void quadraticCongruenceSimpleFillSolution(final List<Integer> result, final int x1, final int m) {
+        final int x2 = normalizeIntModulo(-x1, m);
+        if (!result.contains(x1))
+            result.add(x1);
+        if (!result.contains(x2))
+            result.add(x2);
+    }
+    
+    /**
+     * Helper method for quadraticCongruenceSimpleSolve() and binomialCongruence().
+     * Rules out equivalent solutions for even modulus.
+     */
+    private static List<Integer> binomialCongruenceRuleOut(final List<Integer> result) {
+        if (result.isEmpty())
+            return result;
+        
+        final int resultSize = result.size();
+        final int m = result.get(resultSize - 1); // last item is modulus
+        if (m % 2 == 1)
+            return result;
+        
+        final int testM = m/2;         
+        final int x1 = normalizeIntModulo(result.get(0), testM); // first solution
+        final List<Integer> testResult = new ArrayList<>(Arrays.asList(x1));
+        for (int i = 1; i < resultSize - 1; ++i) {
+            final int xi = normalizeIntModulo(result.get(i), testM);
+            final int terminator = testResult.size();
+            for (int j = 0; j < terminator; ++j) {
+                if (xi == testResult.get(j))
+                    break;
+                if (lastForCycle(j, terminator))
+                    testResult.add(xi);
+            }
+        }
+        
+        if (testResult.size() < resultSize - 1) {
+            testResult.add(testM);
+            return testResult;
+        }
+        return result;
+    }
+ 
+    /**
+     * Solves the quadratic congruence of form ax^2 + bx + c ≡ 0 (mod m).
+     * @param a Integer
+     * @param b Integer
+     * @param c Integer
+     * @param m Positive integer coprime with a
+     * @return List of solutions ending with modulus: [x1, x2, ..., xn, m]
+     */
+    public static List<Integer> quadraticCongruenceGeneral(int a, int b, int c, int m) {
+        positiveCheck(m);
+        isCoprimeCheck(a, m);
+        if (m == 1)
+            return new ArrayList<>(Arrays.asList(0, m));
+        
+        a = normalizeIntModulo(a, m);
+        b = normalizeIntModulo(b, m);
+        c = normalizeIntModulo(c, m);
+        if (a == 0) {
+            final Pair<Integer, Integer> linear = linearCongruence(b, -c, m);
+            return new ArrayList<>(Arrays.asList(linear.getFirst(), linear.getSecond()));
+        }
+        
+        final List<Integer> subResult = quadraticCongruenceSimple(b*b - 4*a*c, 4*m);
+        if (subResult.isEmpty())
+            return new ArrayList<>();
+        
+        final List<Integer> generated = quadraticCongruenceGeneralGenerate(subResult, m);
+        if (generated.isEmpty())
+            return new ArrayList<>();
+        
+        final int terminator = generated.size() - 1;
+        final List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < terminator; ++i) {
+            final int t = generated.get(i);
+            if (((t - b) % 2) != 0)
+                throw new RuntimeException("Computational error.");
+            
+            final Pair<Integer, Integer> partial = linearCongruence(a, (t - b)/2, m);
+            if (partial.isEmpty())
+                return new ArrayList<>();
+            if ((partial.equals(new Pair<>(0, 1))) && (!lastForCycle(i, terminator)))
+                continue;
+            
+            final int xi = partial.getFirst();
+            if (!result.contains(xi))
+                result.add(xi);
+            m = partial.getSecond();
+        }
+        
+        if (!result.isEmpty()) {
+            Collections.sort(result);
+            result.add(m);
+        }
+        return result;
+    }
+    
+    /**
+     * Generates a solution for quadratic congruence of form ax^2 + bx + c ≡ 0 (mod m) from its sub-result.
+     * Called from quadraticCongruenceGeneral() and quadraticCongruenceGeneralSteps().
+     * @param subResult Solution of simple quadratic congruence of form t^2 ≡ b*b - 4*a*c (mod 4*m)
+     * @param m Input modulus m
+     * @return Solution for input quadratic congruence ax^2 + bx + c ≡ 0 (mod m)
+     */
+    public static List<Integer> quadraticCongruenceGeneralGenerate(final List<Integer> subResult, final int m) {
+        final int currentMod = subResult.get(subResult.size() - 1);
+        final int requiredMod = 2*m;
+        if (currentMod >= requiredMod)
+            return subResult;
+        
+        int generator = subResult.get(0);
+        final List<Integer> generated = new ArrayList<>();
+        final int generatedSize = requiredMod / currentMod;
+        for (int i = 0; i < generatedSize; ++i) {
+            generated.add(generator);
+            generator += currentMod;
+        }
+        generated.add(requiredMod);
+        return generated;
+    }
+
+    /**
+     * Solves the binomial congruence of form x^n ≡ a (mod m).
+     * @param n Positive integer
+     * @param a Integer
+     * @param m Positive integer
+     * @return List of solutions modulo m ending with modulus: [x1, x2, ..., xn, m]
+     */
+    public static List<Integer> binomialCongruence(final int n, int a, final int m) {
+        positiveCheck(n);
+        positiveCheck(m);
+        a = normalizeIntModulo(a, m);
+        if (m == 1)
+            return new ArrayList<>(Arrays.asList(0, 1));
+        if (n == 1) {
+            final Pair<Integer, Integer> result = linearCongruence(1, a, m);
+            return new ArrayList<>(Arrays.asList(result.getFirst(), result.getSecond()));
+        }
+        if (n == 2)
+            return quadraticCongruenceSimple(a, m);
+        
+        int maxNumberOfSolutions = m;
+        if (isCoprime(a, m)) {
+            final int phiM = eulerPhi(m);
+            final int d = gcd(n, phiM);
+            if (modPow(a, phiM / d, m) != 1)
+                return new ArrayList<>();
+            maxNumberOfSolutions = d;
+        }
+        return binomialCongruenceSolve(n, a, m, maxNumberOfSolutions);
+    }
+    
+    /**
+     * Helper method only for binomialCongruence().
+     * Tries to find solution by force.
+     */
+    private static List<Integer> binomialCongruenceSolve(final int n, final int a, final int m, final int maxSolutions) {
+        final List<Integer> result = new ArrayList<>();
+        for (int i = 0; i < m; ++i) {
+            if (modPow(i, n, m) == a) {
+                result.add(i);
+                if (result.size() == maxSolutions)
+                    break;
+            }
+        }
+        if (!result.isEmpty())
+            result.add(m);
+        return binomialCongruenceRuleOut(result);
+    }
+    
+    public static List<List<Integer>> permutationCycles(List<Integer> perm) {
+        permutationCheck(perm);
+        List<Integer> indicesToVisit = new ArrayList<>();
+        for (int i = 0; i < perm.size(); ++i)
+            indicesToVisit.add(i);
+        
+        final List<List<Integer>> result = new ArrayList<>();
+        List<Integer> currentPerm = new ArrayList<>();
+        int i = 0;
+        while (!indicesToVisit.isEmpty()) {
+            if (!indicesToVisit.contains(i))    // Already visited this index
+                i = indicesToVisit.get(0);      // Move to next index
+            
+            indicesToVisit.remove((Integer)i);  // Object i, not object on index i
+            final int element = perm.get(i);
+            if (currentPerm.isEmpty())
+                currentPerm.add(i + 1);
+            if (currentPerm.contains(element)) {// End of cycle
+                if (currentPerm.size() > 1)     // Do not include id's in result
+                    result.add(currentPerm);
+                currentPerm = new ArrayList<>();
+                continue;
+            }
+            currentPerm.add(element);
+            i = element - 1;
+        }
+        return result;
+    }
+    
+    private static void permutationCheck(final List<Integer> perm) {
+        final List<Integer> permCopy = new ArrayList<>(perm);
+        Collections.sort(permCopy);
+        for (int i = 0; i < permCopy.size(); ++i) {
+            if (permCopy.get(i) != i + 1)
+                throw new IllegalArgumentException(perm + "is not a permutation.");
+        }
+    }
+    
+    /**
+     * Throws exception if a < lowerBound.
+     * @param a Integer
+     * @param lowerBound Integer
+     */
+    public static void notSmallerThanCheck(final int a, final int lowerBound) {
+        if (a < lowerBound)
+            throw new IllegalArgumentException("Argument " + a + " is smaller than " + lowerBound);
+    }
+    
+    /**
+     * Throws exception if a == bound.
+     * @param a Integer
+     * @param bound Integer
+     */
+    public static void notEqualCheck(final int a, final int bound) {
+        if (a == bound)
+            throw new IllegalArgumentException("Argument " + a + " is equal to " + bound);
+    }
+    
+    /**
+     * Throws exception if a is negative.
+     * @param a Integer
+     */
+    public static void notNegativeCheck(final int a) {
+        notSmallerThanCheck(a, 0);
+    }
+    
+    /**
+     * Throws exception if a < 1.
+     * @param a Integer
+     */
+    public static void positiveCheck(final int a) {
+        notSmallerThanCheck(a, 1);
+    }
+    
+    /**
+     * Throws exception if a == 0.
+     * @param a Integer
+     */
+    public static void notZeroCheck(final int a) {
+        notEqualCheck(a, 0);
+    }
+    
+    /**
+     * Throws exception if a is not prime.
+     * @param a Integer
+     * @param odd Should 'a' be odd?
+     */
+    public static void isPrimeCheck(final int a, final boolean odd) {
+        if ((odd) && (a == 2))
+            throw new IllegalArgumentException(a + " is not an odd prime.");
+        if (!isPrime(a))
+            throw new IllegalArgumentException(a + " is not a prime.");
+    }
+    
+    /**
+     * Throws exception if a, b are not coprime.
+     * @param a Integer
+     * @param b Integer
+     */
+    public static void isCoprimeCheck(final int a, final int b) {
+        if (!isCoprime(a, b))
+            throw new IllegalArgumentException(a + ", " + b + " are not coprime.");
+    }
+    
+    /**
+     * Throws exception if the difference between max and min is Integer.MAX_VALUE or more.
+     * @param min Integer
+     * @param max Integer >= min
+     */
+    public static void overflowCheck(final int min, final int max) {
+        notSmallerThanCheck(max, min);
+        long result = ((long) max) - min;
+        if (result >= Integer.MAX_VALUE) {
+             throw new RuntimeException("Overflow occured");
+        } else if (result <= Integer.MIN_VALUE) {
+             throw new RuntimeException("Underflow occured");
+        }
+    }
+}

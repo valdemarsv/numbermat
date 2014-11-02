@@ -1,0 +1,125 @@
+package Numbermat.GUI;
+
+import Numbermat.Problems.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.prefs.Preferences;
+
+/**
+ * Constants and helper methods used by other classes from this package.
+ * 
+ * @author Valdemar Svabensky <395868(at)mail(dot)muni(dot)cz>
+ */
+public final class Config {
+    
+    private Config() {
+        throw new IllegalStateException(this.getClass().getName() + " class should not be instantiated.");
+    }
+    
+    /**
+     * Highest accepted number as a user input.
+     */
+    public static final int MAX_INT = 999999;
+    
+    /**
+     * Lowest accepted number as a user input.
+     */
+    public static final int MIN_INT = -999999;
+    
+    /**
+     * Collection of all problem classes used to simplify instantiation of randomly generated problems.
+     * See MainFrame.generateRandomButtonActionPerformed().
+     */
+    public static final ArrayList<Class<? extends MathProblem>> CLASSES = new ArrayList<>(Arrays.asList(
+            GCDProblem.class,
+            BezoutProblem.class,
+            InverseModProblem.class,
+            EulerPhiProblem.class,
+            LinearCongruenceProblem.class,
+            LinearCongruenceSystemProblem.class,
+            UnitGroupElementOrderProblem.class,
+            ModularPowerProblem.class,
+            LegendreSymbolProblem.class,
+            QuadraticCongruenceSimpleProblem.class,
+            QuadraticCongruenceGeneralProblem.class,
+            BinomialCongruenceProblem.class)
+    );
+    
+    /* Order of problems in combobox. */
+    public static final int GCD = 0;
+    public static final int BEZOUT = 1;
+    public static final int INVERSE_MOD = 2;
+    public static final int EULER_PHI = 3;
+    public static final int LINEAR_CONG = 4;
+    public static final int LINEAR_CONG_SYSTEM = 5;
+    public static final int UNIT_GROUP_ELEMENT_ORDER = 6;
+    public static final int MOD_POW = 7;
+    public static final int LEGENDRE = 8;
+    public static final int QUADRATIC_CONG_SIMPLE = 9;
+    public static final int QUADRATIC_CONG_GENERAL = 10;
+    public static final int BINOMIAL_CONG = 11;
+    
+    /**
+     * Names of problems appearing in JComboBox MainFrame.problemTypeSelection.
+     */
+    public static final String[] PROBLEMS = new String[] {
+        "Největší společný dělitel",
+        "Bezoutova rovnost",
+        "Inverze modulo n",
+        "Eulerova funkce φ",
+        "Lineární kongruence",
+        "Soustava lineárních kongruencí",
+        "Řád prvku grupy jednotek",
+        "Modulární umocňování",
+        "Legendreův symbol",
+        "Kvadratická kongruence (jednoduchá)",
+        "Kvadratická kongruence (obecná)",
+        "Binomická kongruence"
+    };
+    
+    /**
+     * Name of easy difficulty bound.
+     */
+    public static final String EASY = "Lehká";
+    
+    /**
+     * Name of medium difficulty bound.
+     */
+    public static final String MEDIUM = "Střední";
+    
+    /**
+     * Name of hard difficulty bound.
+     */
+    public static final String HARD = "Těžká";
+    
+    /**
+     * Alias for default pdfLaTeX executable file location.
+     */
+    public static final String DEFAULT = "Default";
+    
+    /**
+     * Default value for pdfLaTeX executable file.
+     * Null means automatic searching for default file location.
+     */
+    private static File pdfLaTeXFile = null;
+    
+    /**
+     * Initializes application preferences when MainFrame window is created.
+     * @param preferences Object with application preferences
+     */
+    public static void initPreferences(Preferences preferences) {
+        if (pdfLaTeXFile == null)
+            preferences.put("pathToPDFLaTeXFile", DEFAULT);
+        else    
+            preferences.put("pathToPDFLaTeXFile", pdfLaTeXFile.getAbsolutePath());
+    }
+    
+    public static File getPDFLaTeXFile() {
+        return pdfLaTeXFile;
+    }
+
+    public static void setPDFLaTeXFile(File pdfLaTeXFile) {
+        Config.pdfLaTeXFile = pdfLaTeXFile;
+    }
+}

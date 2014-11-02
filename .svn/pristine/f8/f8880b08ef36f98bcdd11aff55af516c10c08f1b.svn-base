@@ -1,0 +1,74 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.AlgorithmsSteps;
+import Numbermat.Pair;
+import Numbermat.Utils;
+import java.util.ArrayList;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class ModularPowerProblem extends MathProblem {
+    
+    private int base;
+    private int exp;
+    private int mod;
+    
+    public ModularPowerProblem(String difficulty) {
+        easyBounds = new Pair(5, 11);
+        mediumBounds = new Pair(11, 37);
+        hardBounds = new Pair(37, 97);
+        
+        final Pair<Integer, Integer> bounds = initBounds(difficulty);
+        final int lowerBound = bounds.getFirst();
+        final int upperBound = bounds.getSecond();
+        
+        final int b = Algorithms.randInt(lowerBound, upperBound);
+        final int e = Algorithms.randInt(lowerBound, upperBound);
+        int m = Algorithms.randInt(lowerBound, upperBound);
+        if (Algorithms.randInt(1, 10) == 1)
+            m = 100;
+        setVariables(b, e, m);
+    }
+    
+    public ModularPowerProblem(int b, int e, int m) {
+        setVariables(b, e, m);
+    }
+    
+    private void setVariables(int b, int e, int m) {
+        base = b;
+        exp = e;
+        mod = m;
+        result = new ArrayList<>(1);
+        result.add(Algorithms.modPow(b, e, m));
+        prepareAll();
+    }
+
+    @Override
+    protected void prepareProblemPlaintext() {
+        final StringBuilder lineStart = AlgorithmsSteps.buildModPowLineStart(base, exp);
+        final StringBuilder lineEnd = AlgorithmsSteps.buildModLineEnd(mod);
+        problemPlaintext = lineStart.append("x").append(lineEnd).toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        final String tmp = Utils.prepareCongruencesMath(problemPlaintext);
+        problemLaTeX = Utils.prepareDisplayMath(tmp);
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        StringBuilder sb = new StringBuilder(problemPlaintext).append(AlgorithmsSteps.SEPARATOR);
+        solutionPlaintext = sb.append(AlgorithmsSteps.modPowSteps(base, exp, mod)).toString();
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        solutionLaTeX = Utils.prepareBasicMath(solutionPlaintext);
+        solutionLaTeX = Utils.prepareCongruencesMath(solutionLaTeX);
+        solutionLaTeX = Utils.prepareAlignMath(solutionLaTeX);
+    }
+}

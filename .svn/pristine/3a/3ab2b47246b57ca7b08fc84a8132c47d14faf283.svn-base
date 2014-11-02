@@ -1,0 +1,93 @@
+package Numbermat.Problems;
+
+import Numbermat.Utils;
+import Numbermat.Algorithms;
+import Numbermat.Pair;
+import java.util.ArrayList;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class GCDProblem extends MathProblem {
+
+    private int a;
+    private int b;
+    
+    public GCDProblem(String difficulty, boolean coprimeNumbers) {
+        /**
+         * Default values of difficulty bounds.
+         * Lower bounds should be powers of 2.
+         * Upper bounds should be powers of 2 minus 1.
+         * (This is because of random prime generator for InverseModProblem.)
+         */
+        easyBounds = new Pair(1, 127);
+        mediumBounds = new Pair(128, 4095);
+        hardBounds = new Pair(4096, 8191);
+        
+        Pair<Integer, Integer> bounds = initBounds(difficulty);
+        int lowerBound = bounds.getFirst();
+        int upperBound = bounds.getSecond();
+        
+        int n1, n2;
+        if (coprimeNumbers) {
+            Pair<Integer, Integer> coprimes = Algorithms.randCoprime(lowerBound, upperBound);
+            n1 = coprimes.getFirst();
+            n2 = coprimes.getSecond();
+        } else {
+            n1 = Algorithms.randInt(lowerBound, upperBound);
+            n2 = Algorithms.randInt(lowerBound, upperBound);
+        }
+        setVariables(n1, n2);
+    }
+    
+    public GCDProblem(int n1, int n2) {
+        setVariables(n1, n2);
+    }
+    
+    private void setVariables(int n1, int n2) {
+        if (n2 < n1) {
+            a = n1;
+            b = n2;
+        }
+        else {
+            a = n2;
+            b = n1;
+        }
+        result = new ArrayList(1);
+        result.add(Algorithms.gcd(a, b));
+        prepareAll();
+    }
+    
+    @Override
+    protected void prepareProblemPlaintext() {
+        problemPlaintext = "NSD(" + a + ", " + b + ") = ?" + Utils.NEWLINE + Utils.NEWLINE;
+    }
+    
+    @Override
+    protected void prepareProblemLaTeX() {
+        problemLaTeX = "$NSD(" + a + ", " + b + ") =$";
+    }
+    
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = Algorithms.gcdSteps(a, b) + Utils.NEWLINE;
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        String solutionCopy = Utils.prepareBasicMath(solutionPlaintext);
+        solutionCopy = Utils.prepareAlignedMath(solutionCopy);
+        solutionCopy = Utils.replaceLast(solutionCopy, "NSD(", "NSD&(");
+        solutionCopy = Utils.replaceLast(solutionCopy, "&=", "=");
+        solutionLaTeX = solutionCopy;
+    }
+    
+    public int getA() {
+        return a;
+    }
+
+    public int getB() {
+        return b;
+    }
+}

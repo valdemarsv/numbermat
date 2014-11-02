@@ -1,0 +1,126 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.Pair;
+import Numbermat.Utils;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * System of 2, 3, or 4 linear congruences.
+ * 
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class LinearCongruenceSystemProblem extends MathProblem {
+    
+    private int equationCount;
+    private List<Integer> aList;
+    private List<Integer> bList;
+    private List<Integer> nList;
+    
+    public LinearCongruenceSystemProblem(String difficulty) {
+        easyBounds = new Pair(2, 20);
+        mediumBounds = new Pair(15, 30);
+        hardBounds = new Pair(25, 50);
+        
+        Pair<Integer, Integer> bounds = initBounds(difficulty);
+        int lowerBound = bounds.getFirst();
+        int upperBound = bounds.getSecond();
+        
+        int equationCount1;
+        switch (difficulty) {
+            case "Lehká"    : equationCount1 = 2; break;
+            case "Střední"  : equationCount1 = 2; break;
+            case "Těžká"    : equationCount1 = 3; break;
+            default: throw new IllegalArgumentException("Unknown difficulty.");
+        }
+        List<Integer> aList1;
+        List<Integer> bList1;
+        List<Integer> nList1;
+        
+        while (true) {
+            aList1 = new ArrayList<>(equationCount1);
+            bList1 = new ArrayList<>(equationCount1);
+            nList1 = new ArrayList<>(equationCount1);
+            for (int i = 0; i < equationCount1; ++i) {
+                int a1 = Algorithms.randInt(lowerBound, upperBound);
+                if (difficulty.equals("Lehká"))
+                    a1 = 1;
+                int b1 = Algorithms.randInt(lowerBound, upperBound);
+                int n1 = Algorithms.randInt(lowerBound, upperBound, false);
+                aList1.add(a1);
+                bList1.add(b1);
+                nList1.add(n1);
+            }
+            // If generated system has a solution
+            Pair<Integer, Integer> solution = Algorithms.linearCongruenceSystem(equationCount1, aList1, bList1, nList1);
+            if ((!solution.equals(new Pair<>())) && (!solution.equals(new Pair<>(Integer.MAX_VALUE, Integer.MAX_VALUE))))
+                break;
+        }
+        setVariables(equationCount1, aList1, bList1, nList1);
+    }
+    
+    public LinearCongruenceSystemProblem(int equationCount1, List<Integer> aList1, List<Integer> bList1, List<Integer> nList1) {
+        setVariables(equationCount1, aList1, bList1, nList1);
+    }
+    
+    private void setVariables(int equationCount1, List<Integer> aList1, List<Integer> bList1, List<Integer> nList1) {
+        equationCount = equationCount1;
+        aList = new ArrayList<>(aList1);
+        bList = new ArrayList<>(bList1);
+        nList = new ArrayList<>(nList1);
+        Pair<Integer, Integer> solution = Algorithms.linearCongruenceSystem(equationCount, aList, bList, nList);
+        if (solution.equals(new Pair<>()))
+            result = new ArrayList<>();
+        else {        
+            result = new ArrayList(2);
+            result.add(solution.getFirst());
+            result.add(solution.getSecond());
+        }
+        prepareAll();
+    }
+    
+    @Override
+    protected void prepareProblemPlaintext() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < equationCount; ++i) {
+            int a = aList.get(i);
+            sb.append((a != 1) ? a : "").append("x ≡ ").append(bList.get(i));
+            sb.append(" (mod ").append(nList.get(i)).append(")").append(Utils.NEWLINE);
+        }
+        problemPlaintext = sb.toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        StringBuilder sb = new StringBuilder("\\[");
+        for (int i = 0; i < equationCount; ++i) {
+            int a = aList.get(i);
+            sb.append((a != 1) ? a : "").append("x \\equiv ").append(bList.get(i));
+            sb.append(" \\pmod{").append(nList.get(i)).append("}\\\\").append(Utils.NEWLINE);
+        }
+        problemLaTeX = sb.append("\\]").toString();
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = Algorithms.linearCongruenceSystemSteps(equationCount, aList, bList, nList);
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        solutionLaTeX = Utils.prepareCongruencesMath(solutionPlaintext);
+        solutionLaTeX = Utils.prepareBasicMath(solutionLaTeX);
+        solutionLaTeX = Utils.prepareAlignedMath(solutionLaTeX);
+        solutionLaTeX = solutionLaTeX.replace("|", "\\mid");
+        solutionLaTeX = solutionLaTeX.replace("∤", "\\nmid");
+        if (equationCount > 1) {
+            solutionLaTeX = solutionLaTeX.replaceAll("Substituujeme do", "&\\\\text{Substituujeme do }");
+            solutionLaTeX = solutionLaTeX.replaceAll(". rovnice.", "\\\\text{. rovnice.}");
+        }
+        if (solutionLaTeX.contains("Kongruence")) {
+            solutionLaTeX = solutionLaTeX.replaceAll("Kongruence", "&\\\\text{Kongruence");
+            solutionLaTeX = solutionLaTeX.replaceAll("řešení.", "řešení.}");
+        }
+    }
+}

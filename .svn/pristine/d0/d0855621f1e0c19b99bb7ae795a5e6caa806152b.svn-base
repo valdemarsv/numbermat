@@ -1,0 +1,80 @@
+package Numbermat.Problems;
+
+import Numbermat.Utils;
+import Numbermat.Algorithms;
+import Numbermat.AlgorithmsSteps;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class BezoutProblem extends MathProblem {
+    
+    private GCDProblem gcdProblem;
+    
+    public BezoutProblem(String difficulty, boolean coprimeNumbers) {
+        gcdProblem = new GCDProblem(difficulty, coprimeNumbers);
+        setVariables();
+    }
+    
+    public BezoutProblem(int n1, int n2) {
+        gcdProblem = new GCDProblem(n1, n2);
+        setVariables();
+    }
+    
+    private void setVariables() {
+        result = Algorithms.bezout(gcdProblem.getA(), gcdProblem.getB());
+        prepareAll();
+    }
+
+    public GCDProblem getGcdProblem() {
+        return gcdProblem;
+    }
+
+    @Override
+    protected void prepareProblemPlaintext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Nalezněte čísla d, x, y, aby").append(Utils.NEWLINE);
+        sb.append(gcdProblem.getA()).append("x + ");
+        sb.append(gcdProblem.getB()).append("y = d");
+        sb.append(Utils.NEWLINE).append(Utils.NEWLINE);
+        problemPlaintext = sb.toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\\text{Nalezn\\v{e}te \\v{c}ísla }$d, x, y$, \\text{aby}\\\\\\[");
+        sb.append(gcdProblem.getA()).append("x + ");
+        sb.append(gcdProblem.getB()).append("y = d\\]\\\\");
+        problemLaTeX = sb.toString();
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        final String solutionGCD = gcdProblem.getSolutionPlaintext();
+        final String solutionBezout = AlgorithmsSteps.bezoutSteps(gcdProblem.getA(), gcdProblem.getB());
+        StringBuilder sb = new StringBuilder();
+        sb.append(solutionGCD).append(Utils.NEWLINE).append(solutionBezout);
+        solutionPlaintext = sb.toString();
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        // This method does not use Utils.prepareAlignedMath() !
+        String solutionBezout = AlgorithmsSteps.bezoutSteps(gcdProblem.getA(), gcdProblem.getB());
+        solutionBezout = Utils.prepareBasicMath(solutionBezout);
+        solutionBezout = solutionBezout.replaceAll("=", "&=");
+        solutionBezout = Utils.replaceLast(solutionBezout, "&=", "=");
+        
+        String solutionGCD = gcdProblem.getSolutionLaTeX();
+        int newLineReplacementPosition = solutionGCD.lastIndexOf("{align}") + 9;
+        solutionGCD = Utils.replaceLast(solutionGCD, Utils.NEWLINE + "\\end{align}", "\\\\");
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append(solutionGCD).append(Utils.NEWLINE).append(solutionBezout);
+        Utils.insertLaTeXNewlineSymbol(sb, newLineReplacementPosition, true);
+        sb.append(Utils.NEWLINE).append("\\end{align}");
+        solutionLaTeX = sb.toString();
+    }
+}

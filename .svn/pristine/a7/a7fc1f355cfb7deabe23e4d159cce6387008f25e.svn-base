@@ -1,0 +1,98 @@
+package Numbermat.GUI.utils;
+
+import java.awt.Color;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
+import Numbermat.GUI.MainFrame;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class UserInputChecker {
+
+    private UserInputChecker() {
+        throw new IllegalStateException("UserInputChecker class should not be instantiated.");
+    }
+    
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @return Parsed natural number or null in case of error
+     */
+    public static Integer naturalNumberInput(JTextField inputField, MainFrame mainFrame) {
+        Integer result = null;
+        try {
+            result = Integer.parseInt(inputField.getText());
+            if ((result < 0) || (result > Configuration.MAX_INT)) {
+                result = null;
+                throw new NumberFormatException("Invalid range.");
+            }
+            inputField.setBackground(Color.white);
+        } catch (NumberFormatException ex) {
+            error(inputField, mainFrame,
+                    "Prosím zadejte přirozené číslo v intervalu [0, " + (Configuration.MAX_INT + 1) + ").");
+        }
+        return result;
+    }
+    
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @return Natural number result or null in case of error
+     */
+    public static List<Integer> naturalNumberResult(JTextField inputField, MainFrame mainFrame) {
+        List<Integer> actualResult = null;
+        Integer userAnswer = naturalNumberInput(inputField, mainFrame);
+        if (userAnswer != null) {
+            actualResult = new ArrayList<>();
+            actualResult.add(userAnswer);
+        }
+        return actualResult;
+    }
+    
+    /**
+     *
+     * @param inputField Component where the user inputs text
+     * @param mainFrame Frame where error message is shown
+     * @return Parsed bezout coefficients or null in case of error
+     */
+    public static List<Integer> bezoutResult(JTextField inputField, MainFrame mainFrame) {
+        List<Integer> actualResult = null;
+        try {
+            String[] tokens = inputField.getText().split("\\s+");
+            if (tokens.length != 3)
+                throw new IllegalArgumentException("Invalid number of arguments.");
+            
+            actualResult = new ArrayList<>();
+            for (int i = 0; i < 3; ++i) {
+                int coefficient = Integer.parseInt(tokens[i]);
+                actualResult.add(coefficient);
+                if ((coefficient < Configuration.MIN_INT) ||
+                    (coefficient > Configuration.MAX_INT)) {
+                    actualResult = null;
+                    throw new NumberFormatException("Invalid range.");
+                }
+            }
+            inputField.setBackground(Color.white);
+        } catch (IllegalArgumentException ex) {
+            error(inputField, mainFrame,
+                    "Prosím zadejte tři celočíselné koeficienty d, x, y oddělené mezerou.");
+        }
+        return actualResult;
+    }
+    
+    public static void error(JTextField inputField, MainFrame mainFrame, String msg) {
+        final String header = "Chybný vstup";
+        inputField.setBackground(Color.red);
+        JOptionPane.showMessageDialog(mainFrame, msg, header, JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    public static void error(MainFrame mainFrame, String msg, String header) {
+        JOptionPane.showMessageDialog(mainFrame, msg, header, JOptionPane.INFORMATION_MESSAGE);
+    }
+}

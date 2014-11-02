@@ -1,0 +1,1106 @@
+package Numbermat;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import static Numbermat.Utils.NEWLINE;
+
+/**
+ * Methods to generate step-by-step solutions to computations in Algorithms class.
+ * 
+ * @author Valdemar Svabensky <395868(at)mail(dot)muni(dot)cz>
+ */
+public final class AlgorithmsSteps {
+
+    private AlgorithmsSteps() {
+        throw new IllegalStateException(this.getClass().getName() +
+                " class should not be instantiated.");
+    }
+    
+    /*
+    public static final String SMALL_A_ACUTE = "\u00e1";
+    public static final String SMALL_E_ACUTE = "\u00e9";
+    public static final String SMALL_I_ACUTE = "\u00ed";
+    public static final String SMALL_U_RING = "\u016f";
+    
+    public static final String SMALL_C_CARON = "\u010d";
+    public static final String SMALL_E_CARON = "\u011b";
+    public static final String LARGE_R_CARON = "\u0158";
+    public static final String SMALL_R_CARON = "\u0159";
+    public static final String SMALL_S_CARON = "\u0161";
+    public static final String SMALL_Z_CARON = "\u017e";
+    */
+    
+    public static final String MULT = " * ";
+    public static final String CONG = " \u2261 ";           // " ≡ "
+    public static final String NOT_CONG = " \u2262 ";       // " ≢ "
+    public static final String PHI = "\u03c6";              // "φ"
+    public static final String PHIB = "\u03c6(";            // "φ("
+    public static final String NOT_DIVIDES = " \u2224 ";    // "∤"
+    public static final String TIMES = "\u00d7";            // "×"
+    public static final String SIGMA = "\u03c3";            // "σ"
+    public static final String CIRC = " \u25e6 ";           // " ◦ "
+    
+    public static final String SEPARATOR = "--------------------" + NEWLINE;
+    
+    public static final String NO_SOLUTION = "Neexistuje žádné řešení." + NEWLINE;
+    public static final String INFINITE_SOLUTIONS = "Existuje nekonečně mnoho řešení." + NEWLINE;
+
+    /**
+     * Euclidean algorithm for finding the greatest common divisor of two integers.
+     * @param a Integer
+     * @param b Integer
+     * @return Step-by-step solution to the greatest common divisor problem
+     */
+    public static String gcdSteps(int a, int b) {
+        final StringBuilder gcdEquals = buildGCDEquals(a, b);
+        if (a < 0) {
+            if (b < 0)
+                return gcdEquals.append(buildGCDNewline(-a, -b)).append(gcdSteps(-a, -b)).toString();
+            else
+                return gcdEquals.append(buildGCDNewline(-a, b)).append(gcdSteps(-a, b)).toString();
+        } else if (b < 0)
+            return gcdEquals.append(buildGCDNewline(a, -b)).append(gcdSteps(a, -b)).toString();
+        if (a < b)
+            return gcdEquals.append(buildGCDNewline(b, a)).append(gcdSteps(b, a)).toString();
+        
+        final StringBuilder result = new StringBuilder();
+        while (b > 0) {
+            int r = a % b;
+            result.append(a).append(" = ");
+            result.append(a / b).append(MULT);
+            result.append(b).append(" + ");
+            result.append(r).append(NEWLINE);
+            a = b;
+            b = r;
+        }
+        return result.append(gcdEquals).append(a).append(NEWLINE).toString();
+    }
+    
+    private static StringBuilder buildGCD(final int a, final int b) {
+        return new StringBuilder().append("(").append(a).append(", ").append(b).append(")");
+    }
+    
+    /**
+     * @param a Integer
+     * @param b Integer
+     * @return StringBuilder of form "(a, b) = "
+     */
+    public static StringBuilder buildGCDEquals(final int a, final int b) {
+        return buildGCD(a, b).append(" = ");
+    }
+    
+    private static StringBuilder buildGCDNewline(final int a, final int b) {
+        return buildGCD(a, b).append(NEWLINE);
+    }
+
+    /**
+     * Extended Euclidean algorithm for solving Bezout's identity.
+     * @param a Non-negative integer, a >= b
+     * @param b Non-negative integer
+     * @return Step-by-step solution to solving Bezout's identity
+     */
+    public static String bezoutSteps(int a, int b) {
+        Algorithms.notNegativeCheck(a);
+        Algorithms.notNegativeCheck(b);
+        Algorithms.notSmallerThanCheck(a, b);
+        if (b == 0)
+            return buildBezoutSolutionSimple(a, b, a, 1, 0).toString();
+        
+        final List<Integer> gcdStepsList = new ArrayList<>();
+        while (b > 0) {
+            int r = a % b;
+            gcdStepsList.add(a);
+            gcdStepsList.add(a / b);
+            gcdStepsList.add(b);
+            gcdStepsList.add(r);
+            a = b;
+            b = r;
+        }
+        // Convert ArrayList to array
+        final Integer[] gcdSteps = gcdStepsList.toArray(new Integer[gcdStepsList.size()]);
+        if (gcdSteps.length == 4)
+            return buildBezoutSolutionSimple(a, b, gcdSteps[2], 0, 1).toString();
+        
+        final StringBuilder result = new StringBuilder();
+        StringBuilder line = new StringBuilder();
+        line.append(a).append(" = ");
+        line.append(gcdSteps[gcdSteps.length - 8]).append(" - ");
+        line.append(gcdSteps[gcdSteps.length - 7]).append(MULT);
+        line.append(gcdSteps[gcdSteps.length - 6]).append(NEWLINE);
+        result.append(line);
+        
+        boolean swapMinusSign = false; // minuses alternate every second iteration
+        for (int i = gcdSteps.length - 9; i > -1; i -= 4) {
+            final StringBuilder replacement = new StringBuilder();
+            replacement.append("(").append(gcdSteps[i - 3]);
+            replacement.append(" - ").append(gcdSteps[i - 2]);
+            replacement.append(MULT).append(gcdSteps[i - 1]).append(")");
+            final int replaceIndex = line.lastIndexOf((gcdSteps[i]).toString());
+            line.replace(replaceIndex, replaceIndex + replacement.length(), replacement.toString());
+            
+            result.append(line).append(NEWLINE);
+            line = new StringBuilder();
+            gcdSteps[i - 2] *= gcdSteps[i + 2];
+            if (i == gcdSteps.length - 9) {
+                gcdSteps[i - 2] += 1;
+            } else {
+                gcdSteps[i - 2] += gcdSteps[i + 6];
+            }
+            line.append(a).append(" = ");
+            if (swapMinusSign) {
+                line.append(gcdSteps[i + 2]);
+            } else {
+                line.append(gcdSteps[i + 2] * (-1));
+            }
+            line.append(MULT).append(gcdSteps[i - 3]);
+            if (swapMinusSign) {
+                line.append(" - ");
+                swapMinusSign = false;
+            } else {
+                line.append(" + ");
+                swapMinusSign = true;
+            }
+            line.append(gcdSteps[i - 2]).append(MULT);
+            line.append(gcdSteps[i - 1]).append(NEWLINE);
+            result.append(line);
+        }
+        result.append("x = ");
+        if (swapMinusSign) {
+            result.append(gcdSteps[5] * (-1));
+        } else {
+            if (gcdSteps.length == 8) {
+                result.append(gcdSteps[6]);
+            } else {
+                result.append(gcdSteps[5]);
+            }
+        }
+        result.append(", y = ");
+        if (swapMinusSign) {
+            result.append(gcdSteps[1]);
+        } else {
+            result.append(gcdSteps[1] * (-1));
+        }
+        return result.append(NEWLINE).toString();
+    }
+
+    private static StringBuilder buildBezoutSolutionSimple(final int a, final int b,
+            final int d, final int x, final int y) {
+        final StringBuilder result = new StringBuilder();
+        result.append(d).append(" = ").append(x).append(MULT).append(a).append(" + ");
+        result.append(y).append(MULT).append(b).append(NEWLINE);
+        result.append("x = ").append(x).append(", y = ").append(y).append(NEWLINE);
+        return result;
+    }
+    
+    /**
+     * Euler's totient (phi) function.
+     * @param n Positive integer
+     * @return Step-by-step solution to finding the value of phi n
+     */
+    public static String eulerPhiSteps(final int n) {
+        Algorithms.positiveCheck(n);
+        if (n < 2)
+            return buildPhiEquals(n).append(n).toString();
+        
+        String factorization = factorizeSteps(n);
+        final StringBuilder result = new StringBuilder().append(factorization).append(NEWLINE);
+        factorization = factorization.replaceFirst(n + " = ", "");
+        result.append(buildPhiEquals(n)).append(buildPhi(factorization));
+        
+        final StringBuilder tmp = new StringBuilder(factorization.replaceAll(" \\* ", ") \\*" + PHIB));
+        if (!tmp.toString().equals(factorization))
+            result.append(buildPhiEquals(n)).append(buildPhi(tmp.toString()));
+        
+        result.append(buildPhiEquals(n));
+        int phi = 1;
+        final List<Pair<Integer, Integer>> factors = Algorithms.factorize(n);
+        final int terminator = factors.size();
+        for (int i = 0; i < terminator; ++i) {
+            final int prime = factors.get(i).getFirst();
+            final int exponent = factors.get(i).getSecond();
+            phi *= prime - 1;
+            phi *= Math.pow(prime, exponent - 1);
+            result.append("(").append(prime - 1).append(MULT);
+            result.append(buildPower(prime, exponent - 1)).append(")");
+            if (!Utils.lastForCycle(i, terminator))
+                result.append(MULT);
+        }
+        result.append(NEWLINE).append(buildPhiEquals(n));
+        for (int i = 0; i < terminator; ++i) {
+            final int prime = factors.get(i).getFirst();
+            final int exponent = factors.get(i).getSecond();
+            result.append((prime - 1) * (int)(Math.pow(prime, exponent - 1)));
+            if (!Utils.lastForCycle(i, terminator))
+                result.append(MULT);
+        }
+        result.append(NEWLINE);
+        if (terminator > 1)
+            result.append(buildPhiEquals(n)).append(phi).append(NEWLINE);
+        
+        return result.toString();
+    }
+    
+    /**
+     * @param n Non-negative integer (check is performed in Algorithms class)
+     * @return String of form "n = p1^e1 * p2^e2 * ... * pn^en"
+     */
+    private static String factorizeSteps(final int n) {
+        final List<Pair<Integer, Integer>> factors = Algorithms.factorize(n);
+        final int terminator = factors.size();
+        final StringBuilder result = new StringBuilder().append(n).append(" = ");
+        for (int i = 0; i < terminator; ++i) {
+            final int prime = factors.get(i).getFirst();
+            final int exponent = factors.get(i).getSecond();
+            result.append(buildPower(prime, exponent));
+            if (!Utils.lastForCycle(i, terminator))
+                result.append(MULT);
+        }
+        return result.toString();
+    }
+    
+    private static StringBuilder buildPower(final int base, final int exp) {
+        final StringBuilder sb = new StringBuilder().append(base).append("^");
+        if (exp > 9) sb.append("{");
+        sb.append(exp);
+        if (exp > 9) sb.append("}");
+        return sb;
+    }
+    
+    private static StringBuilder buildPhi(final int n) {
+        return new StringBuilder().append(PHIB).append(n).append(")");
+    }
+    
+    /**
+     * @param n Integer
+     * @return StringBuilder of form "φ(n) = "
+     */
+    public static StringBuilder buildPhiEquals(final int n) {
+        return buildPhi(n).append(" = ");
+    }
+    
+    private static StringBuilder buildPhi(final String s) {
+        return new StringBuilder().append(PHIB).append(s).append(")").append(NEWLINE);
+    }
+    
+    /**
+     * Generating steps of solving a congruence ax ≡ b (mod n).
+     * Helper method used by linearCongruenceSystemSteps() to solve a single linear congruence.
+     * @param a Integer
+     * @param b Integer
+     * @param n Positive integer
+     * @param forceBezoutSolution Used by linearCongruenceSystemSteps() when we want the sub-solutions of form x = b + n*k
+     * @return Step-by-step solution for a single congruence.
+     */
+    private static String linearCongruenceSteps(int a, int b, final int n, final boolean forceBezoutSolution) {
+        Algorithms.positiveCheck(n);
+        final StringBuilder result = buildLinearCongruence(a, 'x', b, buildModLineEnd(n));
+        final int originalA = a;
+        final int originalB = b;
+        if ((normalizeIntModuloChanges(a, n)) || (normalizeIntModuloChanges(b, n))) {
+            a = Algorithms.normalizeIntModulo(a, n);
+            b = Algorithms.normalizeIntModulo(b, n);
+            result.append(buildLinearCongruence(a, 'x', b, buildModLineEnd(n)));
+        }
+        if (a == 1)
+            return result.toString();
+        if ((a == 0) && (b == 0))
+            return result.append(INFINITE_SOLUTIONS).toString();
+        if ((a == 0) && (b != 0))
+            return result.append(NO_SOLUTION).toString();
+        
+        // Natural solution
+        if (!forceBezoutSolution) { 
+            StringBuilder naturalSolution = linearCongruenceStepsNatural(
+                    originalA, originalB, n, new StringBuilder());
+            if (naturalSolution.length() != 0)
+                return naturalSolution.toString();
+        }
+        
+        // Bezout's identity solution
+        final int numberOfSolutions = Algorithms.gcd(a, n);
+        result.append(buildGCDEquals(a, n)).append(numberOfSolutions);
+        if (b % numberOfSolutions != 0) {
+            result.append(NOT_DIVIDES).append(b).append(NEWLINE);
+            return result.append(NO_SOLUTION).toString();
+        }
+        result.append(" | ").append(b).append(NEWLINE);
+        result.append(numberOfSolutions).append(" = ").append(a);
+        result.append("r + ").append(n).append("s").append(NEWLINE);
+        int bezoutCoefficientA; // coeffient r such that ra + sn = gcd(a, n)
+        if (a > n) {
+            bezoutCoefficientA = Algorithms.bezout(a, n).get(1);
+        } else {
+            bezoutCoefficientA = Algorithms.bezout(n, a).get(2);
+        }
+        final int shiftedModulus = n / numberOfSolutions;
+        int x = (bezoutCoefficientA * b) / numberOfSolutions;
+        x = Algorithms.normalizeIntModulo(x, shiftedModulus);
+        result.append("r = ").append(bezoutCoefficientA).append(NEWLINE);
+        final StringBuilder lineEnd = buildModLineEnd(shiftedModulus);
+        result.append("x").append(CONG).append(b).append("r / ").append(numberOfSolutions).append(lineEnd);
+        result.append(buildLinearCongruence(1, 'x', x, lineEnd));
+        return result.toString();
+    }
+    
+    /**
+     * Try to solve the congruence as "on paper" instead of Bezout's identity solution.
+     * @param a Integer (non-zero, > 1)
+     * @param b Integer (non-zero)
+     * @param n Positive integer (checked)
+     * @param result StringBuilder from previous run (empty in the beginnning)
+     * @return Step-by-step natural solution or empty StringBuilder
+     */
+    private static StringBuilder linearCongruenceStepsNatural(int a, int b, int n, StringBuilder result) {
+        final boolean firstRun = result.length() == 0;
+        if (firstRun)
+            result.append(buildLinearCongruence(a, 'x', b, buildModLineEnd(n)));
+        final int normA = Algorithms.normalizeIntModulo(a, n);
+        final int normB = Algorithms.normalizeIntModulo(b, n);
+        
+        /**
+         * Let d be a small divisor of both (normalized) a and b.
+         * Try to find this divisor and divide the input congruence by it.
+         * (By 'small' we will mean between 2 and 13, inclusive.)
+         */
+        int d = 1;
+        if (normB != 0)
+            d = linearCongruenceStepsNaturalSearch(Algorithms.commonDivisors(normA, normB));
+        if ((d > 1) && firstRun) {
+            if ((normA != a) || (normB != b))
+                result.append(buildLinearCongruence(normA, 'x', normB, buildModLineEnd(n)));
+            a = normA;
+            b = normB;
+        } else { // Try to find d for original a, b.
+            d = linearCongruenceStepsNaturalSearch(Algorithms.commonDivisors(a, b));
+        }
+        
+        int gcd = Algorithms.gcd(n, d);
+        if (gcd > 1)
+            d = gcd;
+        if (d > 1) { // We found d in either of the branches
+            result = new StringBuilder(Utils.replaceLast(
+                    result.toString(), NEWLINE, "   /÷" + d + NEWLINE));
+            a /= d;
+            b /= d;
+            if (n % d == 0)
+                n /= d;
+            result.append(buildLinearCongruence(a, 'x', b, buildModLineEnd(n)));
+            if (a == 1)
+                return result;
+        }
+        
+        /**
+         * Now a is still > 1, so let d be a small divisor of a.
+         * Try to find d and then search for k such that nk ≡ -b (mod d).
+         * It holds that the congruence ax ≡ b + nk (mod n) is divisible by d.
+         */
+        d = linearCongruenceStepsNaturalSearch(Algorithms.divisors(a));
+        gcd = Algorithms.gcd(n, d);
+        if (gcd > 1)
+            d = gcd;
+        if (d > 1) {
+            final Pair<Integer, Integer> partial = Algorithms.linearCongruence(n, -b, d);
+            if (!partial.isEmpty()) {
+                final int k = partial.getFirst();
+                b = b + n*k;
+                if (k != 0) {
+                    result = new StringBuilder(Utils.replaceLast(
+                            result.toString(), NEWLINE, "   /+" + n*k + NEWLINE));
+                    result.append(buildLinearCongruence(a, 'x', b, buildModLineEnd(n)));
+                }
+                result = new StringBuilder(Utils.replaceLast(
+                        result.toString(), NEWLINE, "   /÷" + d + NEWLINE));
+                a /= d;
+                b /= d;
+                if (n % d == 0)
+                    n /= d;
+                result.append(buildLinearCongruence(a, 'x', b, buildModLineEnd(n)));
+                if (a == 1)
+                    return result;
+            }
+        }
+        
+        if (firstRun) {
+            /* Rerun the process once more. */
+            StringBuilder sb = linearCongruenceStepsNatural(a, b, n, result);
+            if (linearCongruenceStepsNaturalFinished(sb))
+                return sb;
+        
+            /* 
+             * Now if a is still > 1, check a +/- n
+             * (according to which of these has a small divisor).
+             */
+            if (linearCongruenceStepsNaturalSearch(Algorithms.divisors(a + n)) > 1) {
+                sb = linearCongruenceStepsNatural(a + n, b, n, result);
+                if (linearCongruenceStepsNaturalFinished(sb))
+                    return sb;
+            }
+            if (linearCongruenceStepsNaturalSearch(Algorithms.divisors(a - n)) > 1) {
+                sb = linearCongruenceStepsNatural(a - n, b, n, result);
+                if (linearCongruenceStepsNaturalFinished(sb))
+                    return sb;
+            }
+        }
+        return new StringBuilder();
+    }
+    
+    /**
+     * Search for highest possible d (see above).
+     * @param divisors List where to search
+     * @return d
+     */
+    private static int linearCongruenceStepsNaturalSearch(final List<Integer> divisors) {
+        int d = divisors.remove(0); // remove 1
+        for (int i = 0; i < divisors.size(); ++i) {
+            final int di = divisors.get(i);
+            if (di > 13)
+                break;
+            if (di > d)
+                d = di;
+        }
+        return d;
+    }
+    
+    private static boolean linearCongruenceStepsNaturalFinished(StringBuilder sb) {
+        if (sb.length() == 0)
+            return false;
+        // Solution is finished when it has the form x ≡ b (mod n)
+        return !(Character.isDigit(sb.substring(sb.lastIndexOf("x") - 1).charAt(0)));
+    }
+    
+    /**
+     * @param a Integer
+     * @param x Char with variable name
+     * @param b Integer
+     * @param lineEnd StringBuilder containing line end, usually " (mod n)\n"
+     * @return StringBuilder of form "a'x' ≡ b (mod n)\n"
+     */
+    public static StringBuilder buildLinearCongruence(final int a, final char x,
+            final int b, final StringBuilder lineEnd) {
+        
+        return new StringBuilder().append((a == 1) ? "" : a).append(x).append(CONG).append(b).append(lineEnd);
+    }
+    
+    private static StringBuilder buildLinearCongruenceIndex(final int a, final char x,
+            final int i, final int b, final StringBuilder lineEnd) {
+        
+        final StringBuilder sb = buildLinearCongruence(a, x, b, lineEnd);
+        return new StringBuilder(sb.toString().replace(x + "", x + "_" + i));
+    }
+    
+    /**
+     * @param m Integer
+     * @return StringBuilder of form " (mod n)\n"
+     */
+    public static StringBuilder buildModLineEnd(final int m) {
+        return new StringBuilder().append(" (mod ").append(m).append(")").append(NEWLINE);
+    }
+    
+    /*
+     * Checks if normalizing 'a' modulo 'mod' changes the number.
+     * @return true if the number 'a' changes, false if it stays the same.
+     */
+    private static boolean normalizeIntModuloChanges(final int a, final int mod) {
+        return (a != Algorithms.normalizeIntModulo(a, mod));
+    }
+    
+    /**
+     * @param count Number of equations, positive integer
+     * @param aList List of integers
+     * @param bList List of integers
+     * @param nList List of positive integers
+     * @return Steps to solving a system of 'i' congruences of type a_i x ≡ b_i (mod n_i).
+     */
+    public static String linearCongruenceSystemSteps(final int count,
+            final List<Integer> aList, final List<Integer> bList, final List<Integer> nList) {
+        
+        Algorithms.positiveCheck(count);
+        if (aList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in aList");
+        if (bList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in bList");
+        if (nList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in nList");
+        if (count == 1)
+            return linearCongruenceSteps(aList.get(0), bList.get(0), nList.get(0), false);
+
+        final StringBuilder result = new StringBuilder();
+        final List<StringBuilder> lineEnds = new ArrayList<>(count);
+        boolean coefficentsModded = false;
+        for (int i = 0; i < count; ++i) {
+            final int ai = aList.get(i);
+            final int bi = bList.get(i);
+            final int ni = nList.get(i);
+            Algorithms.positiveCheck(ni);
+            aList.set(i, Algorithms.normalizeIntModulo(ai, ni));
+            bList.set(i, Algorithms.normalizeIntModulo(bi, ni));
+            if ((aList.get(i) != ai) || (bList.get(i) != bi))
+                coefficentsModded = true;
+            lineEnds.add(buildModLineEnd(ni));
+            result.append(buildLinearCongruence(ai, 'x', bi, lineEnds.get(i)));
+        }
+        result.append(SEPARATOR);
+        
+        if (coefficentsModded) {
+            for (int i = 0; i < count; ++i) {
+                final int ai = aList.get(i);
+                final int bi = bList.get(i);
+                result.append(buildLinearCongruence(ai, 'x', bi, lineEnds.get(i)));
+            }
+            result.append(SEPARATOR);
+        }
+        
+        final Pair<Integer, Integer> solution = new Pair<>();
+        for (int i = 0; i < count; ++i) {
+            final Pair<Integer, Integer> partial = Algorithms.linearCongruence(
+                    aList.get(i), bList.get(i), nList.get(i));
+            if (partial.isEmpty())
+                return result.append(NO_SOLUTION).toString();
+            if (partial.equals(new Pair<>(0, 1))) {
+                if ((solution.isEmpty()) && (Utils.lastForCycle(i, count)))
+                    return result.append(SEPARATOR).append(INFINITE_SOLUTIONS).toString();
+                continue;
+            }
+            final int partialX = partial.getFirst();
+            final int partialM = partial.getSecond();
+            
+            if (solution.isEmpty()) {
+                solution.setFirst(partialX);
+                solution.setSecond(partialM);
+            } else {
+                solution.setFirst(solution.getFirst() + solution.getSecond() * partialX);
+                solution.setSecond(solution.getSecond() * partialM);
+            }
+            
+            if (i > 0) {
+                result.append((char)('j' + i)).append(" = ").append(partialX).append(" + ");
+                result.append(partialM).append((char)('k' + i)).append(NEWLINE);
+            }
+            
+            final int solutionX = solution.getFirst();
+            final int solutionM = solution.getSecond();
+            final StringBuilder xEquals = new StringBuilder().append(solutionX);
+            xEquals.append(" + ").append(solutionM).append((char)(107 + i));
+            result.append("x = ").append(xEquals).append(NEWLINE);
+            
+            if (!Utils.lastForCycle(i, count)) {
+                result.append(SEPARATOR);
+                final int nextA = aList.get(i + 1);
+                if (nextA != 1)
+                    result.append(nextA).append("(").append(xEquals).append(")");
+                else
+                    result.append(xEquals);
+                result.append(CONG).append(bList.get(i + 1)).append(lineEnds.get(i + 1));
+                bList.set(i + 1, bList.get(i + 1) - (aList.get(i + 1) * solutionX));
+                aList.set(i + 1, aList.get(i + 1) * solutionM);
+            }
+        }
+        result.append(buildLinearCongruence(1, 'x', solution.getFirst(), buildModLineEnd(solution.getSecond())));
+        return result.toString();
+    }
+    
+    /**
+     * @param element Positive integer (check is performed in Algorithms class)
+     * @param n Integer > 1 (check is performed in Algorithms class)
+     * @return Step-by-step solution to finding order of element 'element' in group Zn×
+     */
+    public static String unitGroupElementOrderSteps(final int element, final int n) {
+        final int elementOrder = Algorithms.unitGroupElementOrder(element, n);
+        final int groupOrder = Algorithms.eulerPhi(n);
+        final List<Integer> groupOrderDivisors = Algorithms.divisors(groupOrder);
+        StringBuilder result = new StringBuilder(AlgorithmsSteps.elementsOfUnitGroupSteps(n));
+        result.append("Řád grupy: ").append(buildPhiEquals(n)).append(groupOrder).append(NEWLINE);
+        result.append("Možné řády prvků: ").append(groupOrderDivisors).append(NEWLINE);
+        result = new StringBuilder(result.toString().replaceAll("\\[", "\\\\{"));
+        result = new StringBuilder(result.toString().replaceAll("\\]", "\\\\}"));
+        
+        final StringBuilder lineEnd = new StringBuilder("1 ").append(buildModLineEnd(n));
+        for (int i = 0; i < groupOrderDivisors.size(); ++i) {
+            final int currentDivisor = groupOrderDivisors.get(i);
+            if (currentDivisor == elementOrder)
+                break;
+            result.append(buildPower(element, currentDivisor)).append(NOT_CONG).append(lineEnd);
+        }
+        result.append(buildPower(element, elementOrder)).append(CONG).append(lineEnd);
+        result.append("Řád prvku [").append(element).append("] je ");
+        result.append(elementOrder).append(".").append(NEWLINE);
+        return result.toString();
+    }
+    
+    /**
+     * @param n Integer > 1
+     * @return Steps to finding elements of unit group Zn^×.
+     */
+    private static String elementsOfUnitGroupSteps(final int n) {
+        Algorithms.notSmallerThanCheck(n, 2);
+        final StringBuilder result = new StringBuilder();
+        result.append("Z").append(n).append(TIMES).append(" = ");
+        if (Algorithms.isPrime(n))
+            return result.append("Z").append(n).append("*").append(NEWLINE).toString();
+        
+        result.append("\\{");
+        for (int i = 1; i < n; ++i) {
+            if (Algorithms.isCoprime(i, n)) {
+                result.append(i);
+                if (i < n - 1)
+                    result.append(", ");
+            }
+        }
+        return result.append("\\}").append(NEWLINE).toString();
+    }
+    
+    /**
+     * @param base Integer
+     * @param exp Non-negative integer
+     * @param mod Positive integer
+     * @return Steps of finding (base^exp) mod (mod)
+     */
+    public static String modPowSteps(int base, int exp, final int mod) {
+        Algorithms.notNegativeCheck(exp);
+        Algorithms.positiveCheck(mod);
+        StringBuilder lineStart = buildModPowLineStart(base, exp);
+        final StringBuilder lineEnd = buildModLineEnd(mod);
+        final StringBuilder result = new StringBuilder();
+        if (normalizeIntModuloChanges(base, mod)) {
+            base = Algorithms.normalizeIntModulo(base, mod);
+            result.append(lineStart).append(buildPower(base, exp)).append(lineEnd);
+            lineStart = buildModPowLineStart(base, exp);
+        }
+        if (mod == 1)
+            return modPowReturn(0, result.append(CONG), lineEnd);
+        if (base == 0)
+            return modPowReturn((exp == 0 ? 1 : 0), result.append(CONG), lineEnd);
+        if ((base == 1) || (exp == 0))
+            return modPowReturn(1, result.append(CONG), lineEnd);
+        if (base == -1)
+            return modPowReturn((exp % 2 == 0 ? 1 : -1 + mod), result.append(CONG), lineEnd);
+        if (exp == 1)
+            return modPowReturn(base, result.append(CONG), lineEnd);
+
+        // Find phi
+        boolean endWithCong = false;
+        if (Algorithms.isCoprime(base, mod)) {
+            final int phi = Algorithms.eulerPhi(mod);
+            if (normalizeIntModuloChanges(exp, phi)) {
+                endWithCong = true;
+                result.append(buildPhiEquals(mod)).append(phi).append(NEWLINE);
+                result.append(SEPARATOR).append(lineStart);
+                
+                exp = Algorithms.normalizeIntModulo(exp, phi);
+                if (exp == 0)
+                    return modPowReturn(1, result, lineEnd);
+                if (exp == 1)
+                    return modPowReturn(base, result, lineEnd);
+ 
+                result.append(buildPower(base, exp)).append(lineEnd);
+                lineStart = buildModPowLineStart(base, exp);
+            }
+        }
+        
+        // Find element order
+        try {
+            final int order = Algorithms.unitGroupElementOrder(base, mod);
+            if (normalizeIntModuloChanges(exp, order)) {
+                if (endWithCong)
+                    result.append(CONG);
+                else
+                    result.append(lineStart);
+                endWithCong = true;
+                StringBuilder trailing = new StringBuilder();
+                if (exp % order != 0)
+                    trailing = buildPower(base, exp % order).append(MULT);
+                result.append(trailing);
+                if (exp / order > 1) {
+                    result.append("(").append(buildPower(base, order)).append(")");
+                    result.append("^{").append(exp / order).append("}");
+                } else {
+                    result.append(buildPower(base, order));
+                }
+                result.append(lineEnd).append(CONG).append(trailing);
+                result.append(buildPower(1, exp / order)).append(lineEnd);
+                result.append(CONG);
+                        
+                exp = Algorithms.normalizeIntModulo(exp, order);
+                if (exp == 0)
+                    return modPowReturn(1, result, lineEnd);
+                if (exp == 1)
+                    return modPowReturn(base, result, lineEnd);
+                
+                result.append(buildPower(base, exp)).append(lineEnd);
+                lineStart = buildModPowLineStart(base, exp);
+            }
+        } catch (IllegalArgumentException ex) {
+        }
+        
+        // Try to factorize mod
+        final List<Pair<Integer, Integer>> factorization = Algorithms.factorize(mod);
+        if (factorization.size() > 1) {
+            endWithCong = false;
+            final List<Integer> subMods = new ArrayList<>();
+            final List<StringBuilder> lineEnds = new ArrayList<>();
+            for (int i = 0; i < factorization.size(); ++i) {
+                final int p = factorization.get(i).getFirst();
+                final int e = factorization.get(i).getSecond();
+                final int m = (int)Math.pow(p, e);
+                subMods.add(m);
+                lineEnds.add(buildModLineEnd(m));
+            }
+            
+            if (result.indexOf(NEWLINE) != result.lastIndexOf(NEWLINE))
+                result.append(SEPARATOR);
+            result.append(factorizeSteps(mod)).append(NEWLINE).append(SEPARATOR);
+            
+            for (int i = 0; i < factorization.size(); ++i) {
+                final int subResult = Algorithms.modPow(base, exp, subMods.get(i));
+                result.append(buildModPowResult(subResult, lineStart, lineEnds.get(i)));
+            }
+            result.append(SEPARATOR);
+        }
+        
+        result.append(endWithCong ? CONG : lineStart);
+        return modPowReturn(Algorithms.modPow(base, exp, mod), result, lineEnd);
+    }
+    
+    private static String modPowReturn(final int value,
+            final StringBuilder result, final StringBuilder lineEnd) {
+        return result.append(buildModPowResult(
+                value, new StringBuilder(""), lineEnd)).toString();
+    }
+    
+    private static StringBuilder buildModPowResult(final int result, final StringBuilder lineStart, final StringBuilder lineEnd) {
+        return new StringBuilder().append(lineStart).append(result).append(lineEnd);
+    }
+    
+    /**
+     * @param base Integer
+     * @param exp Integer
+     * @return StringBuilder of form "base^exp ≡ "
+     */
+    public static StringBuilder buildModPowLineStart(final int base, final int exp) {
+        return new StringBuilder().append(buildPower(base, exp)).append(CONG);
+    }
+    
+    /**
+     * @param a Integer
+     * @param p Odd prime (check is performed in Algorithms class)
+     * @return Steps of computing the Legendre symbol (a/p)
+     */
+    public static String legendreSymbolSteps(int a, int p) {
+        final int value = Algorithms.legendreSymbol(a, p);
+        final StringBuilder result = new StringBuilder();
+        if ((a >= -2) && (a <= 2)) {
+            result.append(buildLegendreSymbolEquals(a, p)).append(value).append(NEWLINE);
+            return result.toString();
+        }
+        if (normalizeIntModuloChanges(a, p)) {
+            result.append(buildLegendreSymbolEquals(a, p));
+            a = Algorithms.normalizeIntModulo(a, p);
+            result.append(buildLegendreSymbolNewline(a, p));
+        }
+        // Try to flip a, p
+        boolean minus = false;
+        if ((a < p) && (a != 2) && (Algorithms.isPrime(a))) {
+            result.append(buildLegendreSymbolEquals(a, p));
+            if ((a % 4 != 1) && (p % 4 != 1)) {
+                minus = true;
+                result.append("-");
+            }
+            result.append(buildLegendreSymbolNewline(p, a));
+            int tmp = a;
+            a = p;
+            p = tmp;
+        }
+        if (normalizeIntModuloChanges(a, p)) {
+            if (minus) result.append("-");
+            result.append(buildLegendreSymbolEquals(a, p));
+            a = Algorithms.normalizeIntModulo(a, p);
+            if (minus) result.append("-");
+            result.append(buildLegendreSymbolNewline(a, p));
+        }
+        if ((a > 99) && (!Algorithms.isPrime(a))) {
+            result.append(AlgorithmsSteps.factorizeSteps(a)).append(NEWLINE);
+        }
+        if (minus) result.append("-");
+        result.append(buildLegendreSymbolEquals(a, p)).append(value).append(NEWLINE);
+        return result.toString();
+    }
+
+    private static StringBuilder buildLegendreSymbol(final int a, final int p) {
+        return new StringBuilder("(").append(a).append("/").append(p).append(")");
+    }
+    
+    /**
+     * @param a Integer
+     * @param p Integer
+     * @return StringBuilder of form "(a/p) = "
+     */
+    public static StringBuilder buildLegendreSymbolEquals(final int a, final int p) {
+        return buildLegendreSymbol(a, p).append(" = ");
+    }
+    
+    private static StringBuilder buildLegendreSymbolNewline(final int a, final int p) {
+        return buildLegendreSymbol(a, p).append(NEWLINE);
+    }
+    
+    
+    /**
+     * @param x Char, variable symbol
+     * @param a Integer
+     * @param m Positive integer
+     * @return Steps in finding a solution for congruence of form 'x'^2 ≡ a (mod m).
+     */
+    public static String quadraticCongruenceSimpleSteps(final char x, int a, final int m) {
+        Algorithms.positiveCheck(m);
+        final StringBuilder lineEnd = buildModLineEnd(m);
+        final StringBuilder result = buildBinomialCongruence(1, x, 2, 0, -a, lineEnd);
+        if (normalizeIntModuloChanges(a, m)) {
+            a = Algorithms.normalizeIntModulo(a, m);
+            result.append(buildBinomialCongruence(1, x, 2, 0, -a, lineEnd));
+        }
+        
+        if ((a != 0) && (!Algorithms.isPowerOf2(m))) {
+            final List<Pair<Integer, Integer>> factorization = Algorithms.factorize(m);
+            for (int i = 0; i < factorization.size(); ++i) {
+                final int pi = factorization.get(i).getFirst();
+                if (pi == 2)
+                    continue;
+                if (Algorithms.legendreSymbol(a, pi) == -1) {
+                    result.append(SEPARATOR);
+                    result.append(AlgorithmsSteps.factorizeSteps(m)).append(NEWLINE);
+                    result.append(AlgorithmsSteps.legendreSymbolSteps(a, pi));
+                    return result.append(NO_SOLUTION).toString();
+                }
+            }
+        }
+        final List<Integer> solution = Algorithms.quadraticCongruenceSimple(a, m);
+        return result.append(quadraticCongruenceSimpleBuildSolution(solution, x)).toString();
+    }
+    
+    
+    /**
+     * @param a Integer
+     * @param x Char, variable symbol
+     * @param exp Positive integer
+     * @param b Integer
+     * @param c Integer
+     * @param lineEnd StringBuilder containing line end, usually " (mod n)\n"
+     * @return StringBuilder of form "a'x'^{exp} + b'x' + c ≡ 0 (mod m)\n"
+     */
+    public static StringBuilder buildBinomialCongruence(final int a, final char x,
+            final int exp, final int b, final int c, final StringBuilder lineEnd) {
+        
+        Algorithms.positiveCheck(exp);
+        if (exp == 1)
+            return buildLinearCongruence(a + b, x, -c, lineEnd);
+        if (a == 0)
+            return buildLinearCongruence(b, x, -c, lineEnd);
+        
+        final StringBuilder sb = new StringBuilder().append((a == 1) ? "" : a);
+        sb.append(x).append("^");
+        if (exp > 9) sb.append("{");
+        sb.append(exp);
+        if (exp > 9) sb.append("}");
+        
+        if ((a == 1) && (b == 0))
+            return sb.append(CONG).append(-c).append(lineEnd); // 'x'^2 ≡ -c (mod m)
+        
+        if (b != 0)
+            sb.append(buildCoefficient(b, false)).append(x);
+        sb.append(buildCoefficient(c, true));
+        return sb.append(CONG).append("0").append(lineEnd);
+    }
+    
+    private static StringBuilder buildCoefficient(final int n, final boolean absolute) {
+        if (n == 0) 
+            return new StringBuilder();
+        
+        final StringBuilder sb = new StringBuilder().append((n > 0) ? " + " : " - ");
+        if ((absolute) || (Math.abs(n) != 1))
+            sb.append((n > 0) ? n : -n);
+        return sb;
+    }
+
+    private static StringBuilder quadraticCongruenceSimpleBuildSolution(
+            final List<Integer> solution, final char x) {
+        if (solution.isEmpty())
+            return new StringBuilder(NO_SOLUTION);
+        
+        final int lastIndex = solution.size() - 1;
+        final StringBuilder lineEnd = buildModLineEnd(solution.get(lastIndex));
+        final StringBuilder result = new StringBuilder(SEPARATOR);
+        for (int i = 0; i < lastIndex; ++i)
+            result.append(buildLinearCongruenceIndex(1, x, i + 1, solution.get(i), lineEnd));
+        return result;
+    }
+    
+    /**
+     * @param a Integer
+     * @param b Integer
+     * @param c Integer
+     * @param m Positive integer coprime with a
+     * @return Steps in finding a solution for congruence of form ax^2 + bx + c ≡ 0 (mod m)
+     */
+    public static String quadraticCongruenceGeneralSteps(int a, int b, int c, final int m) {
+        Algorithms.positiveCheck(m);
+        Algorithms.isCoprimeCheck(a, m);
+        final StringBuilder lineEnd = buildModLineEnd(m);
+        final StringBuilder result = buildBinomialCongruence(a, 'x', 2, b, c, lineEnd);
+        if (m == 1)
+            return result.append(INFINITE_SOLUTIONS).toString();
+        
+        if ((normalizeIntModuloChanges(a, m)) || (normalizeIntModuloChanges(b, m)) || (normalizeIntModuloChanges(c, m))) {
+            a = Algorithms.normalizeIntModulo(a, m);
+            b = Algorithms.normalizeIntModulo(b, m);
+            c = Algorithms.normalizeIntModulo(c, m);
+            result.append(buildBinomialCongruence(a, 'x', 2, b, c, lineEnd));
+        }
+        if (a == 0)
+            return linearCongruenceSteps(b, -c, m, false).toString();
+        if ((a == 1) && (b == 0))
+            return quadraticCongruenceSimpleSteps('x', -c, m).toString();
+        
+        final int D = b*b - 4*a*c;
+        result.append("D = b^2 - 4ac").append(NEWLINE);
+        result.append("D = ").append(D).append(NEWLINE).append(SEPARATOR);
+        result.append(quadraticCongruenceSimpleSteps('t', D, 4*m));
+        final List<Integer> subResult = Algorithms.quadraticCongruenceSimple(D, 4*m);
+        if (subResult.isEmpty())
+            return result.toString();
+        
+        final List<Integer> generated = Algorithms.quadraticCongruenceGeneralGenerate(subResult, m);
+        final int terminator = generated.size();
+        result.append(SEPARATOR);
+        for (int i = 0; i < terminator - 1; ++i) {
+            final int t = generated.get(i);
+            if (((t - b) % 2) != 0)
+                throw new RuntimeException("Computational error.");
+            
+            final boolean lastCycle = Utils.lastForCycle(i, terminator);
+            final int newA = (t - b)/2;
+            result.append("(t-b)/2 = ").append(newA).append(NEWLINE);
+            
+            final Pair<Integer, Integer> partial = Algorithms.linearCongruence(a, newA, m);
+            result.append(buildLinearCongruence(a, 'x', newA, buildModLineEnd(m)));
+            if (partial.equals(new Pair<>()))
+                return result.append(NO_SOLUTION).toString();
+            if ((partial.equals(new Pair<>(0, 1))) && (!lastCycle))
+                continue;
+            result.append(buildLinearCongruence(1, 'x', partial.getFirst(), buildModLineEnd(partial.getSecond())));
+            if (!lastCycle)
+                result.append(SEPARATOR);
+        }
+        final List<Integer> solution = Algorithms.quadraticCongruenceGeneral(a, b, c, m);
+        return result.append(quadraticCongruenceSimpleBuildSolution(solution, 'x')).toString();
+    }
+    
+    /**
+     * @param n Positive integer
+     * @param a Integer
+     * @param m Positive integer
+     * @return Steps in finding a solution for congruence of form x^n ≡ a (mod m)
+     */
+    public static String binomialCongruenceSteps(final int n, int a, final int m) {
+        Algorithms.positiveCheck(n);
+        Algorithms.positiveCheck(m);
+        StringBuilder lineEnd = buildModLineEnd(m);
+        final StringBuilder result = buildBinomialCongruence(1, 'x', n, 0, -a, lineEnd);
+        if (m == 1)
+            return result.append(INFINITE_SOLUTIONS).toString();
+        
+        if (normalizeIntModuloChanges(a, m)) {
+            a = Algorithms.normalizeIntModulo(a, m);
+            result.append(buildBinomialCongruence(1, 'x', n, 0, -a, lineEnd));
+        }
+        result.append(SEPARATOR);
+        
+        if (n == 1)
+            return linearCongruenceSteps(1, a, m, false).toString();
+        if (n == 2)
+            return quadraticCongruenceSimpleSteps('x', a, m).toString();
+        
+        if (Algorithms.isCoprime(a, m)) {
+            final int phiM = Algorithms.eulerPhi(m);
+            final int d = Algorithms.gcd(n, phiM);
+            final int test = Algorithms.modPow(a, phiM / d, m);
+            
+            result.append(buildGCDEquals(a, m)).append(1).append(NEWLINE);
+            result.append(buildPhiEquals(m)).append(phiM).append(NEWLINE);
+            result.append(buildGCDEquals(n, phiM)).append(d).append(NEWLINE);
+            result.append(buildModPowResult(test, buildModPowLineStart(a, phiM / d), buildModLineEnd(m)));
+            if (test != 1)
+                return result.append(NO_SOLUTION).toString();
+            result.append(SEPARATOR);
+        }
+        
+        final List<Integer> solutions = Algorithms.binomialCongruence(n, a, m);
+        if (solutions.isEmpty())
+            return result.append(NO_SOLUTION).toString();
+        
+        final int lastIndex = solutions.size() - 1;
+        lineEnd = buildModLineEnd(solutions.get(lastIndex));
+        for (int i = 0; i < lastIndex; ++i)
+            result.append(buildLinearCongruence(1, 'x', solutions.get(i), lineEnd));
+        return result.toString();
+    }
+    
+    /**
+     * @param inputPerm Permutation (a subgroup of Sn for n >= 1)
+     * @return Representation of a permutation as a String of form "(a1, a2, ..., an)"
+     */
+    public static String permutationToString(final List<Integer> inputPerm) {
+        return inputPerm.toString().replaceAll("\\[", "(").replaceAll("\\]", ")");
+    }
+    
+    /**
+     * @param inputPerm Permutation (a subgroup of Sn for n >= 1) up to 99 elements
+     * @return Representation of a permutation as a matrix
+     */
+    public static String permutationToMatrix(final List<Integer> inputPerm) {
+        final List<Integer> sorted = new ArrayList<>(inputPerm);
+        Collections.sort(sorted);
+        
+        final StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < sorted.size(); ++i) {
+            if ((i < 9) && (inputPerm.get(i) > 9))
+                sb.append(" ");
+            sb.append(i + 1);
+            if (!Utils.lastForCycle(i, sorted.size()))
+                sb.append(", ");
+        }
+        sb.append(")").append(Utils.NEWLINE);
+        sb.append(permutationToString(inputPerm));
+        return sb.toString();
+    }
+    
+    /**
+     * @param inputPerm Permutation (a subgroup of Sn for n >= 1)
+     * @return Decomposition into cycles and steps to finding permutation order
+     */
+    public static String permutationOrderSteps(final List<Integer> inputPerm) {
+        final Set<List<Integer>> cycles = Algorithms.permutationCycles(inputPerm);
+        StringBuilder result = new StringBuilder();
+        StringBuilder orders = new StringBuilder("k = ");
+        if (cycles.isEmpty()) {
+            result.append("id");
+            orders.append("1");
+        } else {
+            if (cycles.size() > 1)
+                orders.append("[");
+            int order = 1;
+            for (List<Integer> cycle : cycles) {
+                final int currentCycleOrder = cycle.size();
+                order = Algorithms.lcm(order, currentCycleOrder);
+                orders.append(currentCycleOrder).append(", ");
+                result.append(permutationToString(cycle)).append(CIRC);
+            }
+            orders = new StringBuilder(orders.substring(0, orders.lastIndexOf(", ")));
+            if (cycles.size() > 1)
+                orders.append("] = ").append(order);
+            result = new StringBuilder(result.substring(0, result.lastIndexOf(CIRC)));
+        }
+        result.append(NEWLINE).append(orders).append(NEWLINE);
+        return result.toString();
+    }
+}

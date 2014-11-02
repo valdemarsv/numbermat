@@ -1,0 +1,70 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.Pair;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class LinearCongruenceProblem extends MathProblem {
+    
+    private LinearCongruenceSystemProblem lcsProblem;
+    
+    public LinearCongruenceProblem(final String difficulty) {
+        easyBounds = new Pair(11, 50);
+        mediumBounds = new Pair(50, 500);
+        hardBounds = new Pair(500, 1000);
+        
+        final Pair<Integer, Integer> bounds = initBounds(difficulty);
+        final int lowerBound = bounds.getFirst();
+        final int upperBound = bounds.getSecond();
+        
+        int aa, bb, nn;
+        while (true) {
+            aa = Algorithms.randInt(lowerBound, upperBound);
+            bb = Algorithms.randInt(lowerBound, upperBound);
+            nn = Algorithms.randInt(lowerBound, upperBound, false);
+            final Pair<Integer, Integer> solution = Algorithms.linearCongruence(aa, bb, nn);
+            if ((!solution.isEmpty()) && (!solution.equals(new Pair<>(0, 1))))
+                break;
+        }
+        setVariables(aa, bb, nn);
+    }
+    
+    public LinearCongruenceProblem(final int aa, final int bb, final int nn) {
+        setVariables(aa, bb, nn);
+    }
+    
+    private void setVariables(final int aa, final int bb, final int nn) {
+        final List<Integer> aList = new ArrayList<>(Arrays.asList(aa));
+        final List<Integer> bList = new ArrayList<>(Arrays.asList(bb));
+        final List<Integer> nList = new ArrayList<>(Arrays.asList(nn));
+        lcsProblem = new LinearCongruenceSystemProblem(1, aList, bList, nList);
+        result = lcsProblem.getResult();
+        prepareAll();
+    }
+
+    @Override
+    protected void prepareProblemPlaintext() {
+        problemPlaintext = lcsProblem.getProblemPlaintext();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        problemLaTeX = lcsProblem.getProblemLaTeX();
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = lcsProblem.getSolutionPlaintext();
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        solutionLaTeX = lcsProblem.getSolutionLaTeX();
+    }
+}

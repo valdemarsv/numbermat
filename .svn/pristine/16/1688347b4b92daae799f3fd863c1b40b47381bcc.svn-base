@@ -1,0 +1,1216 @@
+package Numbermat;
+
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class Algorithms {
+    
+    private Algorithms() {
+        throw new IllegalStateException("Algorithms class should not be instantiated.");
+    }
+
+    public static final int FOR_LOOP_ATTEMPTS = 1000;
+    
+    /**
+     * @param n Integer
+     * @return Is 'n' prime?
+     */
+    public static boolean isPrime(int n) {
+        if (n < 2)
+            return false;
+        if (n == 2)
+            return true;
+        if (n % 2 == 0)
+            return false;
+        
+        for (int i = 3; i <= Math.sqrt(n) + 1; i = i + 2) {
+            if (n % i == 0)
+                return false;
+        }
+        return true;
+    }
+    
+    /**
+     * @param a Integer
+     * @param b Integer
+     * @return Are 'a', 'b' coprime integers?
+     */
+    public static boolean isCoprime(int a, int b) {
+        return (gcd(a, b) == 1);
+    }
+    
+    /**
+     * @param n Non-zero integer
+     * @return ArrayList of all positive divisors of 'n'
+     */
+    public static List<Integer> divisors(int n) {
+        if (n < 0)
+            return divisors(-n);
+        notZeroCheck(n);
+        List<Integer> divisors = new ArrayList<>();
+        divisors.add(1);
+        
+        if (!isPrime(n)) {
+            int i = 2;
+            int increment = 1;
+            
+            if (n % 2 == 1) {
+                i = 3;
+                increment = 2; // test odd ones only
+            }
+            
+            for (; i <= n / 2; i = i + increment) {
+                if (n % i == 0)
+                    divisors.add(i);
+            }
+        }
+        
+        if (n != 1)
+            divisors.add(n);
+        return divisors;
+    }
+    
+    /**
+     * @param n Integer
+     * @return Is 'n' a power of 2?
+     */
+    public static boolean isPowerOfTwo(int n) {
+        return (n != 0) && ((n & (n - 1)) == 0);
+    }
+    
+    public static boolean isPowerOfFour(int n) {
+        return (isPowerOfTwo(n)) && ((getNumberOfBits(n) % 2) == 1);
+    }
+    
+    /**
+     * @param n Integer
+     * @return Number of bits needed to express 'n' in binary
+     */
+    public static int getNumberOfBits(int n) {
+        if (n == 0)
+            return 1;
+        if (n < 0)
+            return 1 + getNumberOfBits(-n); // extra bit for a sign
+        
+        return Integer.SIZE - Integer.numberOfLeadingZeros(n);
+    }
+    
+    /**
+      * Returns a pseudo-random number between min and max, inclusive.
+      * The difference between min and max can be at most Integer.MAX_VALUE - 1.
+      * @param min Minimum value
+      * @param max Maximum value. Cannot be smaller than min.
+      * @param zero Is zero allowed?
+      * @return Integer in interval [min, max].
+      */
+    public static int randInt(int min, int max, boolean zero) {
+        notSmallerThanCheck(max, min);
+        if ((min == 0) && (max == 0) && !zero)
+                throw new IllegalArgumentException("Bounds allow to generate only zero, but it is not allowed.");
+         
+        Random rand = new Random();
+        int n = rand.nextInt((max - min) + 1) + min;
+        if (!zero) {
+            while (n == 0)
+                n = rand.nextInt((max - min) + 1) + min;
+        }
+        return n;
+    }
+    
+    public static int randInt(int min, int max) {
+        return randInt(min, max, true);
+    }
+    
+    /**
+      * Returns a pseudo-random prime between min and max, inclusive.
+      * The difference between min and max can be at most Integer.MAX_VALUE - 1.
+      * @param min Minimum value. Non-negative integer.
+      * @param max Maximum value. Cannot be smaller than min. Cannot be smaller than 2.
+      * @return Prime in interval [min, max].
+      */
+    public static int randPrime(int min, int max) {
+        notNegativeCheck(min);          // min is not negative
+        notSmallerThanCheck(max, 2);    // max is not smaller than 2
+        notSmallerThanCheck(max, min);  // max is not smaller than min
+
+        int randomBitLength;
+        do {
+            randomBitLength = getNumberOfBits(randInt(min, max));
+        } while (randomBitLength < 2);
+        
+        Random rand = new SecureRandom();
+        BigInteger n;
+        for (int i = 0; i < FOR_LOOP_ATTEMPTS; ++i) {
+            n = BigInteger.probablePrime(randomBitLength, rand);
+            if ((n.intValue() >= min) && (n.intValue() <= max))
+                return n.intValue();
+        }
+        throw new RuntimeException("Unable to generate a prime in the given interval.");
+    }
+    
+    /**
+      * Returns a pseudo-random pair of coprime integers between min and max, inclusive.
+      * The difference between min and max can be at most Integer.MAX_VALUE - 1.
+      * @param min Minimum value. Non-negative integer.
+      * @param max Maximum value. Must be greater than min.
+      * @return Pair of coprime integers in interval [min, max].
+      */
+    public static Pair<Integer, Integer> randCoprime(int min, int max) {
+        notNegativeCheck(min);
+        notSmallerThanCheck(max, min);
+        
+        int a = randInt(min, max);
+        int b = randInt(min, max);
+        for (int i = 0; i < FOR_LOOP_ATTEMPTS; ++i) {
+            if (isCoprime(a, b))
+                return new Pair<>(a, b);
+            b = randInt(min, max);
+        }
+        
+        a = randPrime(min, max);
+        for (int i = 0; i < FOR_LOOP_ATTEMPTS; ++i) {
+            if (isCoprime(a, b))
+                return new Pair<>(a, b);
+            b = randInt(min, max);
+        }
+        throw new RuntimeException("Unable to generate a pair of coprimes in the given interval.");
+    }
+     
+    /**
+     * Euclidean algorithm for finding the greatest common divisor of two integers.
+     * See Handbook of Applied Cryptography, sec. 2.4, page 66 for details.
+     * @param a Integer
+     * @param b Integer
+     * @return gcd(a,b)
+     */
+    public static int gcd(int a, int b) {
+        if (a < 0)
+            return gcd(-a, b);
+        if (b < 0)
+            return gcd(a, -b);
+        if (a < b)
+            return gcd(b, a);
+        
+        while (b > 0) {
+            int r = a % b;
+            a = b;
+            b = r;
+        }
+        return a;
+    }
+    
+    /**
+     * Euclidean algorithm for finding the greatest common divisor of two integers.
+     * @param a Integer
+     * @param b Integer
+     * @return Step-by-step solution with every partial computation
+     */  
+     public static String gcdSteps(int a, int b) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("(").append(a).append(", ").append(b).append(") = (");
+        if (a < 0) {
+            if (b < 0) { // a < 0, b < 0
+                sb.append(-a).append(", ").append(-b).append(")").append(Utils.NEWLINE);
+                return sb.toString() + gcdSteps(-a, -b);
+            }
+            else { // a < 0, b > 0
+                sb.append(-a).append(", ").append(b).append(")").append(Utils.NEWLINE);
+                return sb.toString() + gcdSteps(-a, b);
+            }
+        } else if (b < 0) { // a > 0, b < 0
+            sb.append(a).append(", ").append(-b).append(")").append(Utils.NEWLINE);
+            return sb.toString() + gcdSteps(a, -b);
+        }
+        if (a < b) {
+            sb.append(b).append(", ").append(a).append(")").append(Utils.NEWLINE);
+            return sb.toString() + gcdSteps(b, a);
+        }
+        
+        int copyA = a;
+        int copyB = b;
+        StringBuilder result = new StringBuilder();
+        while (b > 0) {
+            int r = a % b;
+            result.append(a).append(" = ");
+            result.append(a/b).append(" * "); // quotient of a div b
+            result.append(b).append(" + ");
+            result.append(r).append(Utils.NEWLINE); // remainder of a div b
+            a = b;
+            b = r;
+        }
+        result.append("(").append(copyA).append(", ").append(copyB).append(") = ").append(a);
+        return result.toString();
+    }
+    
+    /**
+     * Extended Euclidean algorithm for solving Bezout's equality.
+     * See Handbook of Applied Cryptography, sec. 2.4, page 67 for details.
+     * @param a Non-negative integer, a >= b
+     * @param b Non-negative integer
+     * @return d = gcd(a,b) and x, y such that ax + by = d
+     */
+    public static List<Integer> bezout(int a, int b) {
+        notSmallerThanCheck(a, b);
+        notNegativeCheck(a, b);
+        int d, x, y;
+        
+        if (b == 0) {
+            d = a;
+            x = 1;
+            y = 0;
+        }
+        else {
+            int x1, x2, y1, y2, q, r;
+            x1 = 0; x2 = 1; y1 = 1; y2 = 0;
+            while (b > 0) {
+                q = a/b;
+                r = a - q*b;
+                x = x2 - q*x1;
+                y = y2 - q*y1;
+                a = b;
+                b = r;
+                x2 = x1;
+                x1 = x;
+                y2 = y1;
+                y1 = y;
+            }
+            d = a;
+            x = x2;
+            y = y2;
+        }
+        
+        List<Integer> result = new ArrayList(3);
+        result.add(d);
+        result.add(x);
+        result.add(y);
+        return result;
+    }
+    
+    /**
+     * Extended Euclidean algorithm for solving Bezout's equality.
+     * @param a Non-negative integer, a >= b
+     * @param b Non-negative integer
+     * @return Step-by-step solution with every partial computation
+     */
+    public static String bezoutSteps(int a, int b) {
+        notSmallerThanCheck(a, b);
+        notNegativeCheck(a, b);
+        if (b == 0) {
+            StringBuilder result = new StringBuilder();
+            result.append(a).append(" = 1 * ").append(a).append(" + 0 * 0");
+            result.append(Utils.NEWLINE).append("x = 1, y = 0");
+            return result.toString();
+        }
+                   
+        List<Integer> gcdStepsList = new ArrayList<>();
+        while (b > 0) {
+            int r = a % b;
+            gcdStepsList.add(a);
+            gcdStepsList.add(a/b); // quotient of a div b
+            gcdStepsList.add(b);
+            gcdStepsList.add(r); // remainder of a div b
+            a = b;
+            b = r;
+        }
+        Integer[] gcdSteps = Utils.buildIntegerArray(gcdStepsList);
+        
+        if (gcdSteps.length == 4) {
+            StringBuilder result = new StringBuilder();
+            result.append(gcdSteps[2]).append(" = 0 * ").append(gcdSteps[0]);
+            result.append(" + 1 * ").append(gcdSteps[2]);
+            result.append(Utils.NEWLINE).append("x = 0, y = 1");
+            return result.toString();
+        }
+               
+        StringBuilder result = new StringBuilder();
+        StringBuilder line = new StringBuilder();
+        line.append(a).append(" = ");
+        line.append(gcdSteps[gcdSteps.length - 8]).append(" - ");
+        line.append(gcdSteps[gcdSteps.length - 7]).append(" * ");
+        line.append(gcdSteps[gcdSteps.length - 6]).append(Utils.NEWLINE);
+        result.append(line);
+        
+        boolean swapMinusSign = false; // minuses alternate every second iteration
+        for (int i = gcdSteps.length - 9; i > -1; i = i - 4) {
+            StringBuilder replacement = new StringBuilder();
+            replacement.append("(").append(gcdSteps[i-3]);
+            replacement.append(" - ").append(gcdSteps[i-2]);
+            replacement.append(" * ").append(gcdSteps[i-1]).append(")");
+            int replaceIndex = line.lastIndexOf((gcdSteps[i]).toString());
+            line.replace(replaceIndex, replaceIndex + replacement.length(), replacement.toString());
+            result.append(line).append(Utils.NEWLINE);
+            
+            line = new StringBuilder();
+            gcdSteps[i-2] *= gcdSteps[i+2]; 
+            if (i == gcdSteps.length - 9) { // first iteration
+                gcdSteps[i-2] += 1;
+            } else {
+                gcdSteps[i-2] += gcdSteps[i+6];
+            }
+            line.append(a).append(" = ");
+            if (swapMinusSign) {
+                line.append(gcdSteps[i+2]);
+            } else {
+                line.append(gcdSteps[i+2] * (-1));
+            }
+            line.append(" * ").append(gcdSteps[i-3]);
+            if (swapMinusSign) {
+                line.append(" - ");
+                swapMinusSign = false;
+            }
+            else {
+                line.append(" + ");
+                swapMinusSign = true;
+            }
+            line.append(gcdSteps[i-2]).append(" * ");
+            line.append(gcdSteps[i-1]).append(Utils.NEWLINE);
+            result.append(line);
+        }
+        
+        result.append("x = ");
+        if (swapMinusSign) {
+            result.append(gcdSteps[5] * (-1));
+        } else {
+            if (gcdSteps.length == 8) { // two steps, for cycle was skipped
+                result.append(gcdSteps[6]);
+            } else {
+                result.append(gcdSteps[5]);
+            }
+        }
+        
+        result.append(", y = ");
+        if (swapMinusSign) {
+            result.append(gcdSteps[1]);
+        } else {
+            result.append(gcdSteps[1] * (-1));
+        }
+        return result.toString();
+    }
+    
+   /**
+     *
+     * @param n Non-negative integer
+     * @return Collection of pairs (factor, exponent)
+     */
+    public static List<Pair<Integer, Integer>> factorize(int n) {
+        notNegativeCheck(n);
+        List<Pair<Integer, Integer>> factors = new ArrayList<>();
+        if (n < 4) {
+            factors.add(new Pair<>(n, 1));
+            return factors;
+        }
+        
+        for (int i = 2; i <= n; ++i) {
+            Pair<Integer, Integer> factor = new Pair<>(i, 0);
+            boolean factorFound = false;
+            while (n % i == 0) {
+                factorFound = true;
+                factor.setSecond(factor.getSecond() + 1);
+                n /= i;
+            }
+            if (factorFound)
+                factors.add(factor);
+        }
+        return factors;
+    }
+    
+    public static String factorizeSteps(int n) {
+        List<Pair<Integer, Integer>> factors = factorize(n);
+        StringBuilder result = new StringBuilder();
+        result.append(n).append(" = ");
+        for (int i = 0; i < factors.size(); ++i) {
+            int prime = factors.get(i).getFirst();
+            int exponent = factors.get(i).getSecond();
+            result.append(buildPower(prime, exponent));
+            if (i < factors.size() - 1)
+                result.append(" * ");
+        }
+        return result.toString();
+    }
+        
+    private static StringBuilder buildPower(int base, int exp) {
+        StringBuilder sb = new StringBuilder();
+        return sb.append(base).append("^{").append(exp).append("}");
+    }
+
+    /**
+     *
+     * @param n Non-negative integer
+     * @return Value of Euler totient function for n
+     */
+    public static int eulerPhi(int n) {
+        notNegativeCheck(n);
+        if (n < 2)
+            return n;
+        
+        int phi = 1;
+        List<Pair<Integer, Integer>> factors = factorize(n);
+        for (int i = 0; i < factors.size(); ++i) {
+            int prime = factors.get(i).getFirst();
+            int exponent = factors.get(i).getSecond();
+            phi *= prime - 1;
+            phi *= Math.pow(prime, exponent - 1);
+        }
+        return phi;
+    }
+    
+    public static String eulerPhiSteps(int n) {
+        notNegativeCheck(n);
+        if (n < 2)
+            return "φ(" + n + ") = " + n;
+        
+        StringBuilder result = new StringBuilder();
+        String factorization = factorizeSteps(n);
+        result.append(factorization).append(Utils.NEWLINE);
+        factorization = factorization.replaceFirst(n + " = ", "");
+        
+        result.append("φ(").append(n).append(") = ");
+        result.append("φ(").append(factorization).append(")").append(Utils.NEWLINE);
+        StringBuilder tmp = new StringBuilder(factorization.replaceAll(" \\* ", ") \\* φ("));
+        if (!tmp.toString().equals(factorization)) {
+            result.append("φ(").append(n).append(") = ");
+            result.append("φ(").append(tmp).append(")").append(Utils.NEWLINE);
+        }
+        result.append("φ(").append(n).append(") = ");
+        
+        int phi = 1;
+        List<Pair<Integer, Integer>> factors = factorize(n);
+        
+        for (int i = 0; i < factors.size(); ++i) {
+            int prime = factors.get(i).getFirst();
+            int exponent = factors.get(i).getSecond();
+            phi *= prime - 1;
+            phi *= Math.pow(prime, exponent - 1);
+            result.append("(").append(prime - 1).append(" * ");
+            result.append(buildPower(prime, exponent - 1)).append(")");
+            if (i < factors.size() - 1)
+                result.append(" * ");
+        }
+        result.append(Utils.NEWLINE);
+        result.append("φ(").append(n).append(") = ");
+        for (int i = 0; i < factors.size(); ++i) {
+            int prime = factors.get(i).getFirst();
+            int exponent = factors.get(i).getSecond();
+            result.append((prime - 1) * (int)(Math.pow(prime, exponent - 1)));
+            if (i < factors.size() - 1)
+                result.append(" * ");
+        }
+        result.append(Utils.NEWLINE);
+        if (factors.size() > 1)
+            result.append("φ(").append(n).append(") = ").append(phi).append(Utils.NEWLINE);
+        return result.toString();
+    }
+    
+    /**
+     * Checks if modulus 'n' is a positive integer and mods integer 'a'
+     * Example: -74 % 5 = -4 % 5 = 1
+     * @param a Integer
+     * @param n Positive integer
+     * @return a % n, smallest possible positive solution
+     */
+    public static int normalizeIntModulo(int a, int n) {
+        notZeroCheck(n);
+        notNegativeCheck(n);
+        a = a % n;
+        if (a < 0)
+            a = a + n;
+        return a;
+    }
+    
+    /**
+     * Finding solutions of congruence ax ≡ b (mod n).
+     * @param a Integer
+     * @param b Integer
+     * @param n Positive integer
+     * @return Pair (solution, modulus) OR empty pair if no solutions exist OR
+     * pair (Integer.MAX_VALUE, Integer.MAX_VALUE) if infinite solutions exist.
+     */
+    public static Pair<Integer, Integer> linearCongruence(int a, int b, int n) {
+        a = normalizeIntModulo(a, n);
+        b = normalizeIntModulo(b, n);
+        if ((a == 0) && (b == 0))
+            return new Pair(Integer.MAX_VALUE, Integer.MAX_VALUE);
+        
+        int numberOfSolutions = gcd(a, n);
+        if (b % numberOfSolutions != 0)
+            return new Pair();
+        
+        int bezoutCoefficientA; // coeffient r such that ra + sn = gcd(a, n)
+        if (a > n)
+            bezoutCoefficientA = bezout(a, n).get(1);
+        else
+            bezoutCoefficientA = bezout(n, a).get(2);
+
+        int shiftedModulus = n / numberOfSolutions;
+        int x = (bezoutCoefficientA * b) / numberOfSolutions;
+        x = normalizeIntModulo(x, shiftedModulus);
+        return new Pair(x, shiftedModulus);
+    }
+    
+    /**
+     * Helper method for linearCongruenceSystemSteps for steps of single equation.
+     * @param a Integer
+     * @param b Integer
+     * @param n Positive integer
+     * @param repeatProblem
+     * @return Step-by-step solution with every partial computation for a single congruence.
+     */
+    private static String linearCongruenceSteps(int a, int b, int n, boolean repeatProblem) {
+        final String lineEnd = " (mod " + n + ")" + Utils.NEWLINE;
+        StringBuilder result = new StringBuilder();
+        if (repeatProblem)
+            result.append((a != 1) ? a : "").append("x ≡ ").append(b).append(lineEnd);
+        
+        int copyA = a;
+        int copyB = b;
+        a = normalizeIntModulo(a, n);
+        b = normalizeIntModulo(b, n);
+        if ((copyA != a) || (copyB != b))
+            result.append((a != 1) ? a : "").append("x ≡ ").append(b).append(lineEnd);
+        if ((a == 0) && (b == 0))
+            return result.append("Kongruence má nekonečně mnoho řešení.").append(Utils.NEWLINE).toString();
+        
+        int numberOfSolutions = gcd(a, n);
+        result.append("(").append(a).append(", ").append(n).append(") = ");
+        result.append(numberOfSolutions);
+        if (b % numberOfSolutions != 0) {
+            result.append(" ∤ ").append(b).append(Utils.NEWLINE);
+            return result.append("Kongruence nemá řešení.").append(Utils.NEWLINE).toString();
+        }
+        result.append(" | ").append(b).append(Utils.NEWLINE);
+        result.append(numberOfSolutions).append(" = ").append(a);
+        result.append("r + ").append(n).append("s").append(Utils.NEWLINE);
+
+        int bezoutCoefficientA; // coeffient r such that ra + sn = gcd(a, n)
+        if (a > n)
+            bezoutCoefficientA = bezout(a, n).get(1);
+        else
+            bezoutCoefficientA = bezout(n, a).get(2);
+        
+        int shiftedModulus = n / numberOfSolutions;
+        int x = (bezoutCoefficientA * b) / numberOfSolutions;
+        x = normalizeIntModulo(x, shiftedModulus);
+        result.append("r = ").append(bezoutCoefficientA).append(Utils.NEWLINE);
+        result.append("x ≡ ").append(b).append("r / ").append(numberOfSolutions);
+        result.append(" (mod ").append(shiftedModulus).append(")").append(Utils.NEWLINE);
+        result.append("x ≡ ").append(x).append(" (mod ").append(shiftedModulus);
+        result.append(")").append(Utils.NEWLINE);
+        return result.toString();
+    }
+    
+    /**
+     * Finding solutions of system of 'i' congruences a_i x ≡ b_i (mod n_i).
+     * See http://en.wikipedia.org/wiki/Linear_congruence_theorem#System_of_linear_congruences
+     * 
+     * @param count Number of equations
+     * @param aList List of integers
+     * @param bList List of integers
+     * @param nList List of positive integers
+     * @return Pair (solution, modulus) OR empty pair if no solutions exist OR
+     * pair (Integer.MAX_VALUE, Integer.MAX_VALUE) if infinite solutions exist.
+     */
+    public static Pair<Integer, Integer> linearCongruenceSystem(int count, List<Integer> aInputList, List<Integer> bInputList, List<Integer> nInputList) {
+        if (aInputList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in aInputList");
+        if (bInputList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in bInputList");
+        if (nInputList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in nInputList");
+        
+        List<Integer> aList = new ArrayList<>(aInputList);
+        List<Integer> bList = new ArrayList<>(bInputList);
+        List<Integer> nList = new ArrayList<>(nInputList);
+        for (int i = 0; i < count; ++i) {
+            int ai = aList.get(i);
+            int bi = bList.get(i);
+            int ni = nList.get(i);
+            notZeroCheck(ni);
+            notNegativeCheck(ni);
+            aList.set(i, normalizeIntModulo(ai, ni));
+            bList.set(i, normalizeIntModulo(bi, ni));
+        }
+        
+        Pair<Integer, Integer> solution = new Pair();
+        for (int i = 0; i < count; ++i) {
+            Pair<Integer, Integer> partial = linearCongruence(aList.get(i), bList.get(i), nList.get(i));
+            if (partial.equals(new Pair())) // no solutions for whole system
+                return new Pair(); 
+            if (partial.equals(new Pair(Integer.MAX_VALUE, Integer.MAX_VALUE))) { // infinite solutions for equation 'i'
+                if ((solution.equals(new Pair())) && (i == count - 1))
+                    return new Pair(Integer.MAX_VALUE, Integer.MAX_VALUE);
+                else
+                    continue;
+            }
+            
+            // xi == partial.getFirst() + partial.getSecond()*k
+            if (solution.equals(new Pair())) {
+                solution.setFirst(partial.getFirst());
+                solution.setSecond(partial.getSecond());
+            } else {
+                solution.setFirst(solution.getFirst() + solution.getSecond() * partial.getFirst());
+                solution.setSecond(solution.getSecond() * partial.getSecond());
+            }
+            
+            if (i < count - 1) {
+                bList.set(i+1, bList.get(i+1) - (aList.get(i+1) * solution.getFirst()));
+                aList.set(i+1, aList.get(i+1) * solution.getSecond());
+            }
+        }
+        return solution;
+    }   
+    
+    /*
+     * Jednotlive podkroky riesnia preskocit
+     * Pridat lin. cong. bezout
+     */
+    public static String linearCongruenceSystemSteps(int count, List<Integer> aList, List<Integer> bList, List<Integer> nList) {
+        if (aList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in aList");
+        if (bList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in bList");
+        if (nList.size() != count)
+            throw new IllegalArgumentException("Invalid number of coefficients in nList");
+        
+        StringBuilder result = new StringBuilder();
+        List<String> lineEnds = new ArrayList<>(count);
+        final String separator = "--------------------" + Utils.NEWLINE;
+        boolean coefficentsModded = false;
+        for (int i = 0; i < count; ++i) {
+            int ai = aList.get(i);
+            int bi = bList.get(i);
+            int ni = nList.get(i);
+            notZeroCheck(ni);
+            notNegativeCheck(ni);
+            aList.set(i, normalizeIntModulo(ai, ni));
+            bList.set(i, normalizeIntModulo(bi, ni));
+            if ((aList.get(i) != ai) || (bList.get(i) != bi))
+                coefficentsModded = true;
+            
+            lineEnds.add(" (mod " + ni + ")" + Utils.NEWLINE);
+            result.append((ai != 1) ? ai : "").append("x ≡ ").append(bi).append(lineEnds.get(i));
+        }
+        result.append(separator);
+        if (coefficentsModded) {
+            for (int i = 0; i < count; ++i) {
+                int ai = aList.get(i);
+                result.append((ai != 1) ? ai : "").append("x ≡ ").append(bList.get(i)).append(lineEnds.get(i));
+            }
+            result.append(separator);
+        }
+        
+        Pair<Integer, Integer> solution = new Pair();
+        for (int i = 0; i < count; ++i) {
+            Pair<Integer, Integer> partial = linearCongruence(aList.get(i), bList.get(i), nList.get(i));
+            String partialSteps = linearCongruenceSteps(aList.get(i), bList.get(i), nList.get(i), count > 1);
+            if (i > 0)
+                partialSteps = partialSteps.replaceAll("x", String.valueOf((char)(106 + i)));
+            if (count > 1) {
+                partialSteps = partialSteps.substring(partialSteps.lastIndexOf(Utils.NEWLINE));
+            }
+            result.append(partialSteps);
+            if (partial.equals(new Pair()))
+                return result.toString();
+            if (partial.equals(new Pair(Integer.MAX_VALUE, Integer.MAX_VALUE))) { // infinite solutions for equation 'i'
+                if ((solution.equals(new Pair())) && (i == count - 1) && (count != 1))
+                    return result.append(separator).append("Kongruence má nekonečně mnoho řešení.").append(Utils.NEWLINE).toString();
+                else {
+                    result.append(separator);
+                    continue;
+                }
+            }
+            
+            // xi == partial.getFirst() + partial.getSecond()*k
+            if (solution.equals(new Pair())) {
+                solution.setFirst(partial.getFirst());
+                solution.setSecond(partial.getSecond());
+            } else {
+                solution.setFirst(solution.getFirst() + solution.getSecond() * partial.getFirst());
+                solution.setSecond(solution.getSecond() * partial.getSecond());
+                result.append((char)(106 + i)).append(" = ").append(partial.getFirst()).append(" + ");
+                result.append(partial.getSecond()).append((char)(107 + i)).append(Utils.NEWLINE);
+            }
+            
+            if (count > 1) {
+                result.append("x = ").append(solution.getFirst()).append(" + ");
+                result.append(solution.getSecond()).append((char)(107 + i)).append(Utils.NEWLINE);
+            }
+            
+            if (i < count - 1) {
+                bList.set(i+1, bList.get(i+1) - (aList.get(i+1) * solution.getFirst()));
+                aList.set(i+1, aList.get(i+1) * solution.getSecond());
+                result.append(separator);
+            }
+        }
+        if (count > 1) {
+            result.append("x ≡ ").append(solution.getFirst()).append(" (mod ");
+            result.append(solution.getSecond()).append(")").append(Utils.NEWLINE);
+        }
+        return result.toString();
+    }
+
+    /**
+     *
+     * @param n Integer > 1
+     * @return Elements of unit group Zn×
+     */
+    public static List<Integer> elementsOfUnitGroup(int n) {
+        notSmallerThanCheck(n, 2);
+        List<Integer> result = new ArrayList<>();
+        if (isPrime(n)) {
+            for (int i = 1; i < n; ++i)
+                result.add(i);
+        }
+        else {
+            for (int i = 1; i < n; ++i)
+                if (isCoprime(i, n))
+                    result.add(i);
+        }
+        return result;
+    }
+    
+    public static String elementsOfUnitGroupSteps(int n) {
+        notSmallerThanCheck(n, 2);
+        StringBuilder result = new StringBuilder();
+        result.append("Z").append(n).append("× = ");
+        
+        if (isPrime(n)) {
+            result.append("Z").append(n).append("*").append(Utils.NEWLINE);
+            return result.toString();
+        }
+        result.append("\\{");
+        for (int i = 1; i < n; ++i) {
+            if (isCoprime(i, n)) {
+                result.append(i);
+                if (i < n - 1)
+                    result.append(", ");
+            }
+        }
+        result.append("\\}").append(Utils.NEWLINE);
+        return result.toString();
+    }
+    
+    /**
+     *
+     * @param element Positive integer
+     * @param n Integer > 1
+     * @return Order of element 'element' in group Zn×
+     */
+    public static int unitGroupElementOrder(int element, int n) {
+        notSmallerThanCheck(element, 1);
+        notSmallerThanCheck(n, 2);
+        if (element == 1)
+            return 1;
+        
+        List<Integer> unitGroup = elementsOfUnitGroup(n);
+        if (!unitGroup.contains(element))
+            throw new IllegalArgumentException(element + " is not contained in group Z" + n + "×");
+        
+        List<Integer> possibleElementOrders = divisors(unitGroup.size());
+        for (int i = 0; i < possibleElementOrders.size(); ++i) {
+            int currentOrder = possibleElementOrders.get(i);
+            if (modPow(element, currentOrder, n) == 1)
+                return currentOrder;
+        }
+        return Integer.MAX_VALUE;
+    }
+    
+    public static String unitGroupElementOrderSteps(int element, int n) {
+        notSmallerThanCheck(element, 1);
+        notSmallerThanCheck(n, 2);
+        int elementOrder = unitGroupElementOrder(element, n);
+        int groupOrder = eulerPhi(n);
+        List<Integer> groupOrderDivisors = divisors(groupOrder);
+        
+        StringBuilder result = new StringBuilder(elementsOfUnitGroupSteps(n));
+        result.append("Řád grupy: φ(").append(n).append(") = ").append(groupOrder).append(Utils.NEWLINE);
+        result.append("Možné řády prvků: ").append(groupOrderDivisors).append(Utils.NEWLINE);
+        result = new StringBuilder(result.toString().replaceAll("\\[", "\\\\{"));
+        result = new StringBuilder(result.toString().replaceAll("\\]", "\\\\}"));
+        
+        final StringBuilder lineEnd = new StringBuilder("1 (mod ").append(n).append(")").append(Utils.NEWLINE);
+        for (int i = 0; i < groupOrderDivisors.size(); ++i) {
+            int currentDivisor = groupOrderDivisors.get(i);
+            if (currentDivisor == elementOrder)
+                break;
+            result.append(buildPower(element, currentDivisor)).append(" ≢ ").append(lineEnd);
+        }
+        result.append(buildPower(element, elementOrder)).append(" ≡ ").append(lineEnd);
+        result.append("Řád prvku ").append(element).append(": ").append(elementOrder).append(Utils.NEWLINE);
+        return result.toString();
+    }
+    
+    /**
+     * Modular exponentiation.
+     * @param base Integer
+     * @param exp Non-negative integer
+     * @param mod Positive integer > 1
+     * @return (base^exp) mod (mod)
+     */
+    public static int modPow(int base, int exp, int mod) {
+        notNegativeCheck(exp);
+        notSmallerThanCheck(mod, 2);
+        if (base == 0) {
+            if (exp == 0)
+                return 1;
+            else
+                return 0;
+        }
+        if (base == 1)
+            return 1;
+        if (base == -1)
+            return (exp % 2 == 0 ? 1 : -1 + mod);
+                    
+        BigInteger bigBase = intToBigInteger(base % mod);
+        BigInteger bigExp = intToBigInteger(exp);
+        BigInteger bigMod = intToBigInteger(mod);
+        int result = bigBase.modPow(bigExp, bigMod).intValue();
+        return result;
+    }
+    
+    public static String modPowSteps(int base, int exp, int mod) {
+        notNegativeCheck(exp);
+        notSmallerThanCheck(mod, 2);
+        
+        StringBuilder lineStart = buildPower(base, exp).append(" ≡ ");
+        final StringBuilder lineEnd = new StringBuilder(" (mod ").append(mod).append(")").append(Utils.NEWLINE);
+
+        if (base == 0) {
+            if (exp == 0)
+                return buildModPowResult(1, lineStart, lineEnd).toString();
+            else
+                return buildModPowResult(0, lineStart, lineEnd).toString();
+        }
+        if (base == 1)
+            return buildModPowResult(1, lineStart, lineEnd).toString();
+        if (base == -1)
+            return (exp % 2 == 0 ? buildModPowResult(1, lineStart, lineEnd)
+                                 : buildModPowResult(-1 + mod, lineStart, lineEnd)).toString();
+        
+        StringBuilder result = new StringBuilder();
+
+        // Try to mod base
+        int baseCopy = base;
+        base = normalizeIntModulo(base, mod);
+        if (base != baseCopy) {
+            result.append(lineStart);
+            result.append(buildPower(base, exp)).append(lineEnd);
+            lineStart = buildPower(base, exp).append(" ≡ ");
+        }
+            
+        // Try Euler's theorem
+        if (isCoprime(base, mod)) {
+            int phi = eulerPhi(mod);
+            int expCopy = exp;
+            exp = normalizeIntModulo(exp, phi);
+            if (exp != expCopy) {
+                result.append("φ(").append(mod).append(") = ").append(phi).append(Utils.NEWLINE);
+                if (exp == 0)
+                    return result.append(buildModPowResult(1, lineStart, lineEnd)).toString();
+                result.append(lineStart).append(buildPower(base, exp)).append(lineEnd);
+                lineStart = buildPower(base, exp).append(" ≡ ");
+            }
+        }
+        
+        // Try to find order of base modulo mod
+        try {
+            int order = unitGroupElementOrder(base, mod);
+            int expCopy = exp;
+            exp = normalizeIntModulo(exp, order);
+            if (exp != expCopy) {
+                result.append(buildPower(base, order)).append(" ≡ 1 ").append(lineEnd);
+                if (exp == 0)
+                    return result.append(buildModPowResult(1, lineStart, lineEnd)).toString();
+                result.append(lineStart).append(buildPower(base, exp)).append(lineEnd);
+                lineStart = buildPower(base, exp).append(" ≡ ");
+            }
+        } catch (IllegalArgumentException ex) {
+        }
+        
+        // Try to convert base to small negative number
+        result.append(lineStart);
+        if ((mod > 7) && (base - mod > -4)) {
+            result.append(buildPower(base - mod, exp)).append(lineEnd);
+            lineStart = buildPower(base - mod, exp).append(" ≡ ");
+            result.append(lineStart);
+        }
+        
+        result.append(modPow(base, exp, mod)).append(lineEnd);
+        return result.toString();
+    }
+    
+    private static StringBuilder buildModPowResult(int result, StringBuilder lineStart, StringBuilder lineEnd) {
+        return new StringBuilder().append(lineStart).append(result).append(lineEnd);
+    }
+    
+    /**
+     * Computes the Legendre Symbol
+     * @param a integer
+     * @param p odd prime
+     * @return 1, 0 or -1
+     */
+    public static int legendreSymbol(int a, int p) {
+        isPrimeCheck(p, true);
+        int value = modPow(a, (p-1)/2, p);
+        if (value == p - 1)
+            value = -1;
+        return value;
+    }
+    
+    public static String legendreSymbolSteps(int a, int p) {
+        isPrimeCheck(p, true);
+        int value = legendreSymbol(a, p);
+        StringBuilder result = new StringBuilder();
+        if ((a >= -2) && (a <= 2)) {
+            result.append(buildLegendreSymbol(a, p)).append(" = ").append(value).append(Utils.NEWLINE);
+            return result.toString();
+        }
+        
+        int copyA = a;
+        a = normalizeIntModulo(a, p);
+        if (copyA != a)
+            result.append(buildLegendreSymbol(copyA, p)).append(" = ").append(buildLegendreSymbol(a, p)).append(Utils.NEWLINE);
+        
+        // Try to flip a, p
+        boolean minus = false;
+        if ((a < p) && (a != 2) && (isPrime(a))) {
+            result.append(buildLegendreSymbol(a, p)).append(" = ");
+            if ((a % 4 != 1) && (p % 4 != 1)) {
+                minus = true;
+                result.append("-");
+            }
+            result.append(buildLegendreSymbol(p, a)).append(Utils.NEWLINE);
+            int tmp = a;
+            a = p;
+            p = tmp;
+        }
+        
+        copyA = a;
+        a = normalizeIntModulo(a, p);
+        if (copyA != a) {
+            if (minus) result.append("-");
+            result.append(buildLegendreSymbol(copyA, p)).append(" = ");
+            if (minus) result.append("-");
+            result.append(buildLegendreSymbol(a, p)).append(Utils.NEWLINE);
+        }
+        
+        if ((a > 13) && (!isPrime(a)))
+            result.append(factorizeSteps(a)).append(Utils.NEWLINE);
+        
+        if (minus) result.append("-");
+        result.append(buildLegendreSymbol(a, p)).append(" = ").append(value).append(Utils.NEWLINE);
+        return result.toString();
+    }
+    
+    private static StringBuilder buildLegendreSymbol(int a, int p) {
+        StringBuilder sb = new StringBuilder();
+        return sb.append("(").append(a).append("/").append(p).append(")");
+    }
+    
+    public static boolean isPerfectSquare(int n) {
+        if (n < 0)
+            return false;
+        int test = (int)(Math.sqrt(n));
+        return test*test == n;
+    }
+    
+    /**
+     * Returns the highest power of <base> smaller than <limit> 
+     * @param base Positive integer > 1
+     * @param limit Positive integer > base
+     * @return
+     */
+    public static int findHighestPowerLessThan(int base, int limit) {
+        notSmallerThanCheck(base, 2);
+        notSmallerThanCheck(limit, base);
+        int x = 1;
+        while ((x * base) < limit)
+            x *= base;
+        return x;
+    }
+    
+    /**
+     * Solves the quadratic congruence of form x^2 ≡ a (mod m)
+     * @param a Integer
+     * @param m Positive integer > 1
+     * @return List of pairs (solution, modulus)
+     */
+    public static List<Pair<Integer, Integer>> quadraticCongruenceSimple(int a, int m) {
+        notSmallerThanCheck(m, 2);
+        a = normalizeIntModulo(a, m);
+        List<Pair<Integer, Integer>> result = new ArrayList<>();
+        if (a == 0) {
+            if (isPerfectSquare(m)) {
+                m = (int) Math.sqrt(m);
+            } else if ((m % 2 == 0) && ((m/2 * m/2) % m == 0)) {
+                m = m/2;
+            }
+            result.add(new Pair(0, m));
+            return result;
+        }
+        
+        /**
+         * Let m = m1 * m2 * ... * mn = p1^e1 * p2^e2 * ... * pn^en.
+         * The input congruence is equivalent to system of congruences:
+         * x^2 ≡ a (mod p1), x^2 ≡ a (mod p2), ..., x^2 ≡ a (mod pn).
+         * (The exponents are negligible, since p^e|a => p|a.)
+         * Each subcongruence must have a solution (the corresponding Legendre symbol is 0 or 1),
+         */
+        List<Pair<Integer,Integer>> factorization = factorize(m);
+        for (int i = 0; i < factorization.size(); ++i) {
+            int pi = factorization.get(i).getFirst();
+            if (pi == 2)
+                continue;
+            if (legendreSymbol(a, pi) == -1)// => no solutions to whole system
+                return new ArrayList<>();
+        }
+        
+        if (isPowerOfTwo(m)) {
+            if (m < 16) { // 2, 4 or 8
+                if (a < 2)
+                    result.add(new Pair(a, 2));
+                if ((a == 4) && (m == 8))
+                    result.add(new Pair(2, 4));
+                return result;
+            }
+            // Only 0, 1, 4, 9, 16, 17, 25, 32, 33... are quadratic residues mod power of 2
+            if (a % 8 == 1)
+                return quadraticCongruenceSimpleSolve(a, m);
+            if (!isPowerOfFour(a))
+                return new ArrayList<>();
+            
+            m = m/2;
+            int limit = findHighestPowerLessThan(4, m);
+            if (a == limit) {
+                result.add(new Pair(m/4, m/2));
+            } else if ((a == limit/4) && (isPowerOfFour(m))) {
+                result.add(new Pair(Math.sqrt(a), Math.sqrt(m)));
+            } else {
+                m = m/2;
+                int x1 = (int)Math.sqrt(a);
+                int x2 = -x1 + m;
+                result.add(new Pair(x1, m));
+                result.add(new Pair(x2, m));
+            }
+            return result;
+        }
+        
+        if (m % 2 == 0) {
+            boolean halfModSolution = true;
+            List<Pair<Integer, Integer>> test = quadraticCongruenceSimpleSolve(a, m/2);
+            for (int i = 0; i < test.size(); ++i) {
+                int testXi = test.get(i).getFirst() + m/2;
+                if (((testXi * testXi) % m) != a) {
+                    halfModSolution = false;
+                    break;
+                }
+            }
+            if (halfModSolution) {
+                if (a != m/2)
+                    return test;
+                for (int i = 0; i < test.size(); ++i) {
+                    quadraticCongruenceFillSolution(test.get(i).getFirst() + m/2, m, result);
+                    if (result.size() == 2)
+                        break;
+                }
+                return result;
+            }
+        }
+        return quadraticCongruenceSimpleSolve(a, m);
+    }
+    
+    private static List<Pair<Integer, Integer>> quadraticCongruenceSimpleSolve(int a, int m) {
+        a = normalizeIntModulo(a, m);
+        if (isPowerOfTwo(m))
+            m = m/2;
+        List<Pair<Integer, Integer>> result = new ArrayList<>();
+        for (int i = 0; i < m; ++i) {
+            if (isPerfectSquare(a)) {
+                quadraticCongruenceFillSolution((int) Math.sqrt(a), m, result);
+                if (result.size() == 2)
+                    break;
+            }
+            a += m;
+        }
+        return result;
+    }
+    
+    private static void quadraticCongruenceFillSolution(int x1, int m, List<Pair<Integer, Integer>> result) {
+        int x2 = (-x1 + m) % m;
+        Pair<Integer, Integer> solution1 = new Pair(x1, m);
+        Pair<Integer, Integer> solution2 = new Pair(x2, m);
+        if (!result.contains(solution1))
+            result.add(solution1);
+        if ((x1 != x2) && (!result.contains(solution2)))
+            result.add(solution2);
+    }
+ 
+    /**
+     * Solves the quadratic congruence of form ax^2 + bx + c ≡ 0 (mod n)
+     * @param a Integer
+     * @param b Integer
+     * @param c Integer
+     * @param n Positive integer > 1
+     * @return Two solutions or empty pair
+     */
+    public static Pair<Integer, Integer> quadraticCongruenceGeneral(int a, int b, int c, int n) {
+        notSmallerThanCheck(n, 2);
+        return new Pair<>();
+    }
+
+    /**
+     * Throws exception if a < lowerBound.
+     * @param a
+     * @param lowerBound
+     */
+    public static void notSmallerThanCheck(int a, int lowerBound) {
+        if (a < lowerBound)
+            throw new IllegalArgumentException("Argument " + a + " is smaller than " + lowerBound);
+    }
+    
+    /**
+     * Throws exception if a == bound
+     * @param a
+     * @param bound
+     */
+    public static void notEqualCheck(int a, int bound) {
+        if (a == bound)
+            throw new IllegalArgumentException("Argument " + a + " is equal to " + bound);
+    }
+    
+    public static void notNegativeCheck(int a) {
+        notSmallerThanCheck(a, 0);
+    }
+    
+    public static void notNegativeCheck(int a, int b) {
+        notSmallerThanCheck(a, 0);
+        notSmallerThanCheck(b, 0);
+    }
+    
+    public static void notZeroCheck(int a) {
+        notEqualCheck(a, 0);
+    }
+    
+    public static void notZeroCheck(int a, int b) {
+        notEqualCheck(a, 0);
+        notEqualCheck(b, 0);
+    }
+    
+    public static void isPrimeCheck(int a, boolean odd) {
+        if ((odd) && (a == 2))
+            throw new IllegalArgumentException(a + " is not an odd prime.");
+        if (!isPrime(a))
+            throw new IllegalArgumentException(a + " is not a prime.");
+    }
+    
+    private static BigInteger intToBigInteger(int n) {
+        return new BigInteger(((Integer)n).toString());
+    }
+}

@@ -1,0 +1,69 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.AlgorithmsSteps;
+import Numbermat.Pair;
+import Numbermat.Utils;
+import java.util.ArrayList;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class LegendreSymbolProblem extends MathProblem {
+    
+    int a;
+    int p;
+    
+    public LegendreSymbolProblem(String difficulty) {
+        easyBounds = new Pair(2, 49);
+        mediumBounds = new Pair(10, 69);
+        hardBounds = new Pair(10, 99);
+        
+        Pair<Integer, Integer> bounds = initBounds(difficulty);
+        int lowerBound = bounds.getFirst();
+        int upperBound = bounds.getSecond();
+        
+        int aa = Algorithms.randInt(lowerBound, upperBound);
+        int pp = Algorithms.randPrime(lowerBound, upperBound);
+        setVariables(aa, pp);
+    }
+    
+    public LegendreSymbolProblem(int aa, int pp) {
+        setVariables(aa, pp);
+    }
+    
+    private void setVariables(int aa, int pp) {
+        a = aa;
+        p = pp;
+        result = new ArrayList<>(1);
+        result.add(Algorithms.legendreSymbol(a, p));
+        prepareAll();
+    }
+
+    @Override
+    protected void prepareProblemPlaintext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("(").append(a).append("/").append(p).append(") = ");
+        problemPlaintext = sb.toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\\left(\\frac{").append(a).append("}{").append(p).append("}\\right) = ").append("\\\\").append(Utils.NEWLINE);
+        problemLaTeX = sb.toString();
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = AlgorithmsSteps.legendreSymbolSteps(a, p);
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        solutionLaTeX = Utils.prepareBasicMath(solutionPlaintext);
+        solutionLaTeX = Utils.prepareFractionsMath(solutionLaTeX);
+        solutionLaTeX = Utils.prepareAlignedMath(solutionLaTeX);
+    }
+}

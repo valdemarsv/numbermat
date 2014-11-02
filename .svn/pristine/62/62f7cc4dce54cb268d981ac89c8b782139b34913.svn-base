@@ -1,0 +1,90 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.Pair;
+import Numbermat.Utils;
+import java.util.ArrayList;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class UnitGroupElementOrderProblem extends MathProblem {
+    
+    private int element;
+    private int n;
+    
+    public UnitGroupElementOrderProblem(String difficulty) {
+        easyBounds = new Pair(2, 50);
+        mediumBounds = new Pair(50, 100);
+        hardBounds = new Pair(100, 200);
+        
+        Pair<Integer, Integer> bounds = initBounds(difficulty);
+        int lowerBound = bounds.getFirst();
+        int upperBound = bounds.getSecond();
+        
+        Pair<Integer, Integer> init = Algorithms.randCoprime(lowerBound, upperBound);
+        int first = init.getFirst();
+        int second = init.getSecond();
+        if (first < second)
+            setVariables(first, second);
+        else
+            setVariables(second, first);
+    }
+    
+    public UnitGroupElementOrderProblem(int element1, int n1) {
+        setVariables(element1, n1);
+    }
+    
+    private void setVariables(int element1, int n1) {
+        element = element1;
+        n = n1;
+        result = new ArrayList<>(1);
+        result.add(Algorithms.unitGroupElementOrder(element, n));
+        prepareAll();
+    }
+
+    @Override
+    protected void prepareProblemPlaintext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Určete řád prvku ").append(element);
+        sb.append(" v grupě Z").append(n).append("×.").append(Utils.NEWLINE);
+        problemPlaintext = sb.toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\\text{Ur\\v{c}ete \\v{r}\\'ad prvku }").append(element).append("\\\\");
+        sb.append("\\text{ v grupě }$\\mathbb{Z}_{").append(n).append("}^\\times$\\text{.}");
+        problemLaTeX = sb.toString();
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = Algorithms.unitGroupElementOrderSteps(n, element);
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        solutionLaTeX = Utils.prepareSetsMath(solutionPlaintext);
+        solutionLaTeX = Utils.prepareAlignedMath(solutionLaTeX);
+        solutionLaTeX = Utils.replaceLast(solutionLaTeX, "&=", "=");
+        solutionLaTeX = solutionLaTeX.replaceAll("Řád grupy", "\\\\text{Řád grupy}");
+        solutionLaTeX = solutionLaTeX.replaceAll("Možné řády prvků", "\\\\text{Možné řády prvků}");
+        solutionLaTeX = solutionLaTeX.replaceAll("Řád prvku", "\\\\text{Řád prvku }");
+        solutionLaTeX = solutionLaTeX.replaceAll(":", "&:");
+        
+        StringBuilder sb = new StringBuilder(solutionLaTeX);
+        int commaIndex = sb.indexOf(", ");
+        int counter = 1;
+        while (commaIndex != -1) {
+            if (counter % 10 == 0)
+                sb.replace(commaIndex, commaIndex + 2, ",\\\\&");
+            commaIndex += 2;
+            commaIndex = sb.indexOf(", ", commaIndex);
+            counter++;
+        }
+        solutionLaTeX = sb.toString();
+    }
+}

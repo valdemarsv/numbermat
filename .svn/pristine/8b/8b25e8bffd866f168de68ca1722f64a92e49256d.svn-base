@@ -1,0 +1,562 @@
+package Numbermat;
+
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+/**
+ *
+ * @author Valdemar Svabensky <395868@mail.muni.cz>
+ */
+public final class Algorithms {
+    
+    private Algorithms() {
+        throw new IllegalStateException("Algorithms class should not be instantiated.");
+    }
+    
+    /**
+      * Returns a pseudo-random number between min and max, inclusive.
+      * The difference between min and max can be at most
+      * Integer.MAX_VALUE - 1.
+      *
+      * @param min Minimum value
+      * @param max Maximum value. Must be greater than min.
+      * @return Integer in interval [min, max].
+      */
+    public static int randInt(int min, int max) {
+        if (max < min)
+            throw new IllegalArgumentException("Maximum bound is smaller than minimum.");
+        notNegativeCheck(min, max);
+         
+        Random rand = new Random();
+        int n = rand.nextInt((max - min) + 1) + min;
+        return n;
+    }
+    
+    /**
+      * Returns a pseudo-random prime between min and max, inclusive.
+      * The difference between min and max can be at most
+      * Integer.MAX_VALUE - 1.
+      *
+      * @param min Minimum value
+      * @param max Maximum value. Must be greater than min.
+      * @return Integer in interval [min, max].
+      */
+    public static int randPrime(int min, int max) {
+        if (max < min)
+            throw new IllegalArgumentException("Maximum bound is smaller than minimum.");
+        notNegativeCheck(min, max);
+
+        Random rand = new SecureRandom();
+        BigInteger n;
+        int randomBitLength;
+        
+        do {
+            randomBitLength = getNumberOfBits(randInt(min, max));
+        } while (randomBitLength < 2);
+            
+        do {
+            n = BigInteger.probablePrime(randomBitLength, rand);
+        } while ((n.intValue() < min) || (n.intValue() > max));
+        
+        return n.intValue();
+    }
+    
+    public static Pair<Integer, Integer> randCoprime(int min, int max) {
+        if (max < min)
+            throw new IllegalArgumentException("Maximum bound is smaller than minimum.");
+        notNegativeCheck(min, max);
+        
+        Integer a = randInt(min, max);
+        Integer b = randInt(min, max);
+        while (!isCoprime(a, b)) {
+            b = randInt(min, max);
+        }
+        return new Pair<>(a, b);
+    }
+    
+    public static boolean isPrime(int n) {
+        notNegativeCheck(n);
+        if (n <= 1)
+            return false;
+        if (n == 2)
+            return true;
+        if (n % 2 == 0)
+            return false;
+        
+        for (int i = 3; i <= Math.sqrt(n) + 1; i = i + 2) {
+            if (n % i == 0)
+                return false;
+        }
+        return true;
+    }
+    
+    public static boolean isCoprime(int a, int b) {
+        return (gcd(a, b) == 1);
+    }
+    
+    public static int getNumberOfBits(int n) {
+        notNegativeCheck(n);
+        if (n == 0)
+            return 1;
+        return Integer.SIZE - Integer.numberOfLeadingZeros(n);
+    }
+    
+    public static ArrayList<Integer> divisors(int n) {
+        notNegativeCheck(n);
+        notZeroCheck(n);
+        ArrayList<Integer> divisors = new ArrayList<>();
+        divisors.add(1);
+        
+        if (!isPrime(n)) {
+            int i = 2;
+            int increment = 1;
+            
+            if (n % 2 == 1) {
+                i = 3;
+                increment = 2; // test odd ones only
+            }
+            
+            for (; i <= n / 2; i = i + increment) {
+                if (n % i == 0)
+                    divisors.add(i);
+            }
+        }
+        
+        if (n != 1)
+            divisors.add(n);
+        return divisors;
+    }
+     
+    /**
+     * Euclidean algorithm for finding the greatest common divisor of two integers.
+     * See Handbook of Applied Cryptography, sec. 2.4, page 66 for details.
+     * 
+     * @param a non-negative integer
+     * @param b non-negative integer
+     * @return gcd(a,b)
+     */
+    public static int gcd(int a, int b) {
+        if (a < b)
+            return gcd(b, a);
+        notNegativeCheck(a, b);
+        
+        while (b > 0) {
+            int r = a % b;
+            a = b;
+            b = r;
+        }
+        return a;
+    }
+    
+    /**
+     * Euclidean algorithm for finding the greatest common divisor of two integers.
+     * 
+     * @param a non-negative integer
+     * @param b non-negative integer
+     * @return solution with every partial computation
+     */  
+     public static String gcdSteps(int a, int b) {
+        if (a < b)
+            return gcdSteps(b, a);
+        notNegativeCheck(a, b);
+        
+        int copyA = a;
+        int copyB = b;
+        StringBuilder result = new StringBuilder();
+        while (b > 0) {
+            int r = a % b;
+            result.append(a).append(" = ");
+            result.append(a/b).append(" * "); // quotient of a div b
+            result.append(b).append(" + ");
+            result.append(r).append(Utils.NEWLINE); // remainder of a div b
+            a = b;
+            b = r;
+        }
+        result.append("NSD(").append(copyA).append(", ").append(copyB).append(") = ").append(a);
+        return result.toString();
+    }
+    
+    /**
+     * Extended Euclidean algorithm for solving Bezout's equality.
+     * See Handbook of Applied Cryptography, sec. 2.4, page 67 for details.
+     * 
+     * @param a non-negative integer, a >= b
+     * @param b non-negative integer
+     * @return d = gcd(a,b) and x, y such that ax + by = d
+     */
+    public static List<Integer> bezout(int a, int b) {
+        if (a < b)
+            throw new IllegalArgumentException("Second arugment is bigger than first.");
+        notNegativeCheck(a, b);
+        
+        int d, x, y;
+        
+        if (b == 0) {
+            d = a;
+            x = 1;
+            y = 0;
+        }
+        else {
+            int x1, x2, y1, y2, q, r;
+            x1 = 0; x2 = 1; y1 = 1; y2 = 0;
+            while (b > 0) {
+                q = a/b;
+                r = a - q*b;
+                x = x2 - q*x1;
+                y = y2 - q*y1;
+                
+                a = b;
+                b = r;
+                x2 = x1;
+                x1 = x;
+                y2 = y1;
+                y1 = y;
+            }
+            d = a;
+            x = x2;
+            y = y2;
+        }
+        
+        List<Integer> result = new ArrayList();
+        result.add(d);
+        result.add(x);
+        result.add(y);
+        return result;
+    }
+    
+    /**
+     * Extended Euclidean algorithm for solving Bezout's equality.
+     * 
+     * @param a non-negative integer, a >= b
+     * @param b non-negative integer
+     * @return Every every step in partial computation
+     */
+    public static String bezoutSteps(int a, int b) {
+        if (a < b)
+            throw new IllegalArgumentException("Second arugment is smaller than first.");
+        notNegativeCheck(a, b);
+        if (b == 0) {
+            StringBuilder result = new StringBuilder();
+            result.append(a).append(" = 1 * ").append(a).append(" + 0 * 0");
+            result.append(Utils.NEWLINE).append("x = 1, y = 0");
+            return result.toString();
+        }
+                   
+        ArrayList<Integer> gcdStepsList = new ArrayList<>();
+        while (b > 0) {
+            int r = a % b;
+            gcdStepsList.add(a);
+            gcdStepsList.add(a/b); // quotient of a div b
+            gcdStepsList.add(b);
+            gcdStepsList.add(r); // remainder of a div b
+            a = b;
+            b = r;
+        }
+        Integer[] gcdSteps = Utils.buildIntegerArray(gcdStepsList);
+        
+        if (gcdSteps.length == 4) {
+            StringBuilder result = new StringBuilder();
+            result.append(gcdSteps[2]).append(" = 0 * ").append(gcdSteps[0]);
+            result.append(" + 1 * ").append(gcdSteps[2]);
+            result.append(Utils.NEWLINE).append("x = 0, y = 1");
+            return result.toString();
+        }
+               
+        StringBuilder result = new StringBuilder();
+        StringBuilder line = new StringBuilder();
+        line.append(a).append(" = ");
+        line.append(gcdSteps[gcdSteps.length - 8]).append(" - ");
+        line.append(gcdSteps[gcdSteps.length - 7]).append(" * ");
+        line.append(gcdSteps[gcdSteps.length - 6]).append(Utils.NEWLINE);
+        result.append(line);
+        
+        boolean swapMinusSign = false; // minuses alternate every second iteration
+        for (int i = gcdSteps.length - 9; i > -1; i = i - 4) {
+            StringBuilder replacement = new StringBuilder();
+            replacement.append("(").append(gcdSteps[i-3]);
+            replacement.append(" - ").append(gcdSteps[i-2]);
+            replacement.append(" * ").append(gcdSteps[i-1]).append(")");
+            int replaceIndex = line.lastIndexOf((gcdSteps[i]).toString());
+            line.replace(replaceIndex, replaceIndex + replacement.length(), replacement.toString());
+            result.append(line).append(Utils.NEWLINE);
+            
+            line = new StringBuilder();
+            gcdSteps[i-2] *= gcdSteps[i+2]; 
+            if (i == gcdSteps.length - 9) { // first iteration
+                gcdSteps[i-2] += 1;
+            } else {
+                gcdSteps[i-2] += gcdSteps[i+6];
+            }
+            line.append(a).append(" = ");
+            if (swapMinusSign) {
+                line.append(gcdSteps[i+2]);
+            } else {
+                line.append(gcdSteps[i+2] * (-1));
+            }
+            line.append(" * ").append(gcdSteps[i-3]);
+            if (swapMinusSign) {
+                line.append(" - ");
+                swapMinusSign = false;
+            }
+            else {
+                line.append(" + ");
+                swapMinusSign = true;
+            }
+            line.append(gcdSteps[i-2]).append(" * ");
+            line.append(gcdSteps[i-1]).append(Utils.NEWLINE);
+            result.append(line);
+        }
+        
+        result.append("x = ");
+        if (swapMinusSign) {
+            result.append(gcdSteps[5] * (-1));
+        } else {
+            if (gcdSteps.length == 8) { // two steps, for cycle was skipped
+                result.append(gcdSteps[6]);
+            } else {
+                result.append(gcdSteps[5]);
+            }
+        }
+        
+        result.append(", y = ");
+        if (swapMinusSign) {
+            result.append(gcdSteps[1]);
+        } else {
+            result.append(gcdSteps[1] * (-1));
+        }
+        
+        return result.toString();
+    }
+    
+   /**
+     *
+     * @param n Integer to factorize
+     * @return Collection of pairs (factor, exponent)
+     */
+    public static ArrayList<Pair<Integer, Integer>> factorize(int n) {
+        notNegativeCheck(n);
+        ArrayList<Pair<Integer, Integer>> factors = new ArrayList<>();
+        if (n < 4) {
+            factors.add(new Pair<>(n, 1));
+            return factors;
+        }
+        
+        for (int i = 2; i <= n; ++i) {
+            Pair<Integer, Integer> factor = new Pair<>(i, 0);
+            boolean factorFound = false;
+            while (n % i == 0) {
+                factorFound = true;
+                factor.setSecond(factor.getSecond() + 1);
+                n /= i;
+            }
+            if (factorFound)
+                factors.add(factor);
+        }
+        return factors;
+    }
+    
+    public static String factorizeSteps(int n) {
+        ArrayList<Pair<Integer, Integer>> factors = factorize(n);
+        StringBuilder result = new StringBuilder();
+        result.append(n).append(" = ");
+        for (int i = 0; i < factors.size(); ++i) {
+            int prime = factors.get(i).getFirst();
+            int exponent = factors.get(i).getSecond();
+            result.append(prime).append("^").append(exponent);
+            if (i < factors.size() - 1)
+                result.append(" * ");
+        }
+        return result.toString();
+    }
+
+    /**
+     *
+     * @param n
+     * @return Value of Euler totient function for n
+     */
+    public static int eulerPhi(int n) {
+        notNegativeCheck(n);
+        if ((n == 0) || (n == 1))
+            return n;
+        
+        int phi = 1;
+        ArrayList<Pair<Integer, Integer>> factors = factorize(n);
+        for (int i = 0; i < factors.size(); ++i) {
+            int prime = factors.get(i).getFirst();
+            int exponent = factors.get(i).getSecond();
+            phi *= prime - 1;
+            phi *= Math.pow(prime, exponent - 1);
+        }
+        return phi;
+    }
+    
+    public static String eulerPhiSteps(int n) {
+        notNegativeCheck(n);
+        if ((n == 0) || (n == 1))
+            return "φ(" + n + ") = " + n;
+        
+        StringBuilder result = new StringBuilder();
+        String factorization = factorizeSteps(n);
+        result.append(factorization).append(Utils.NEWLINE);
+        factorization = factorization.replaceFirst(n + " = ", "");
+        
+        result.append("φ(").append(n).append(") = ");
+        result.append("φ(").append(factorization).append(")").append(Utils.NEWLINE);
+        StringBuilder tmp = new StringBuilder(factorization.replaceAll(" \\* ", ") \\* φ("));
+        if (!tmp.toString().equals(factorization)) {
+            result.append("φ(").append(n).append(") = ");
+            result.append("φ(").append(tmp).append(")").append(Utils.NEWLINE);
+        }
+        result.append("φ(").append(n).append(") = ");
+        
+        int phi = 1;
+        ArrayList<Pair<Integer, Integer>> factors = factorize(n);
+        
+        for (int i = 0; i < factors.size(); ++i) {
+            int prime = factors.get(i).getFirst();
+            int exponent = factors.get(i).getSecond();
+            phi *= prime - 1;
+            phi *= Math.pow(prime, exponent - 1);
+            result.append("(").append(prime - 1).append(" * ");
+            result.append(prime).append("^").append(exponent - 1).append(")");
+            if (i < factors.size() - 1)
+                result.append(" * ");
+        }
+        result.append(Utils.NEWLINE);
+        result.append("φ(").append(n).append(") = ");
+        for (int i = 0; i < factors.size(); ++i) {
+            int prime = factors.get(i).getFirst();
+            int exponent = factors.get(i).getSecond();
+            result.append((prime - 1) * (int)(Math.pow(prime, exponent - 1)));
+            if (i < factors.size() - 1)
+                result.append(" * ");
+        }
+        result.append(Utils.NEWLINE);
+        if (factors.size() > 1)
+            result.append("φ(").append(n).append(") = ").append(phi).append(Utils.NEWLINE);
+        return result.toString();
+    }
+    
+    /**
+     * Finding solutions of congruence ax ≡ b (mod n).
+     * 
+     * @param a non-zero integer
+     * @param b integer
+     * @param n positive integer
+     * @return 
+     */
+    public static ArrayList<Integer> linearCongurence(int a, int b, int n) {
+        notZeroCheck(a, n);
+        notNegativeCheck(n);
+        a = normalizeIntModulo(a, n);
+        b = normalizeIntModulo(b, n);
+        
+        ArrayList<Integer> solutions = new ArrayList();
+        int numberOfSolutions = gcd(a, n);
+        if (b % numberOfSolutions != 0)
+            return solutions; // no solutions, empty collection
+        
+        int bezoutCoefficientA; // coeffient r such that ra + sn = gcd(a, n)
+        if (a > n)
+            bezoutCoefficientA = bezout(a, n).get(1);
+        else
+            bezoutCoefficientA = bezout(n, a).get(2);
+
+        int shiftedModulus = n / numberOfSolutions;
+        int x = (bezoutCoefficientA * b) / numberOfSolutions;
+        x = normalizeIntModulo(x, shiftedModulus);
+        for (int i = 0; i < numberOfSolutions; ++i)
+            solutions.add(x + i * shiftedModulus);
+        return solutions;
+    }
+    
+    public static String linearCongurenceSteps(int a, int b, int n) {
+        notZeroCheck(a, n);
+        notNegativeCheck(n);
+        
+        final String lineEnd = " (mod " + n + ")" + Utils.NEWLINE;
+        StringBuilder result = new StringBuilder();
+        result.append(a).append("x ≡ ").append(b).append(lineEnd);
+        
+        int copyA = a;
+        int copyB = b;
+        a = normalizeIntModulo(a, n);
+        b = normalizeIntModulo(b, n);
+        if ((copyA != a) || (copyB != b))
+            result.append(a).append("x ≡ ").append(b).append(lineEnd);
+        
+        int numberOfSolutions = gcd(a, n);
+        result.append("NSD(").append(a).append(", ").append(n).append(") = ");
+        result.append(numberOfSolutions);
+        if (b % numberOfSolutions != 0) {
+            result.append(" ∤ ").append(b).append(Utils.NEWLINE);
+            result.append("Kongruence nemá řešení.").append(Utils.NEWLINE);
+            return result.toString();
+        }
+        result.append(" | ").append(b).append(Utils.NEWLINE);
+        result.append("Kongruence má ").append(numberOfSolutions);
+        result.append(" řešení.").append(Utils.NEWLINE);
+
+        int bezoutCoefficientA; // coeffient r such that ra + sn = gcd(a, n)
+        if (a > n)
+            bezoutCoefficientA = bezout(a, n).get(1);
+        else
+            bezoutCoefficientA = bezout(n, a).get(2);
+        result.append("Hledáme koeficient r, aby ").append(a).append("r + ");
+        result.append(n).append("s = ").append(numberOfSolutions).append(".").append(Utils.NEWLINE);
+                
+        int shiftedModulus = n / numberOfSolutions;
+        int x = (bezoutCoefficientA * b) / numberOfSolutions;
+        x = normalizeIntModulo(x, shiftedModulus);
+        result.append("r = ").append(bezoutCoefficientA).append(" ⇒ x = ");
+        result.append(bezoutCoefficientA).append(" * ").append(b).append(" / ");
+        result.append(numberOfSolutions).append(" (mod ").append(shiftedModulus).append(")").append(Utils.NEWLINE);
+        for (int i = 0; i < numberOfSolutions; ++i)
+            result.append("x = ").append(x + i * shiftedModulus).append(lineEnd);
+        return result.toString();
+    }
+    
+    public static void notNegativeCheck(int a) {
+        if (a < 0)
+            throw new IllegalArgumentException("Negative argument.");
+    }
+    
+    public static void notNegativeCheck(int a, int b) {
+        if ((a < 0) || (b < 0))
+            throw new IllegalArgumentException("Negative argument.");
+    }
+    
+    public static void notZeroCheck(int a) {
+        if (a == 0)
+            throw new IllegalArgumentException("Zero argument.");
+    }
+    
+    public static void notZeroCheck(int a, int b) {
+        if ((a == 0) || (b == 0))
+            throw new IllegalArgumentException("Zero argument.");
+    }
+    
+    public static void notPositiveCheck(int a) {
+        if (a > 0)
+            throw new IllegalArgumentException("Positive argument.");
+    }
+    
+    /**
+     * Example: -74 % 5 = -4 % 5 = 1
+     * 
+     * @param a Any integer
+     * @param n Modulus, positive integer
+     * @return 
+     */
+    public static int normalizeIntModulo(int a, int n) {
+        notNegativeCheck(n);
+        notZeroCheck(n);
+        a = a % n;
+        if (a < 0)
+            a = a + n;
+        return a;
+    }
+}

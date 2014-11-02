@@ -1,0 +1,78 @@
+package Numbermat.Problems;
+
+import Numbermat.Algorithms;
+import Numbermat.AlgorithmsSteps;
+import Numbermat.Pair;
+import Numbermat.Utils;
+import java.util.ArrayList;
+
+/**
+ * Legendre symbol.
+ * 
+ * @author Valdemar Svabensky <395868(at)mail(dot)muni(dot)cz>
+ */
+public final class LegendreSymbolProblem extends MathProblem {
+    
+    private int a;
+    private int p;
+    
+    /**
+     * Instantiate with pseudo-randomly generated parameters.
+     * @param difficulty One of Config.EASY, Config.MEDIUM, Config.HARD
+     */
+    public LegendreSymbolProblem(final String difficulty) {
+        easyBounds = new Pair(2, 49);
+        mediumBounds = new Pair(10, 69);
+        hardBounds = new Pair(49, 119);
+        
+        final Pair<Integer, Integer> bounds = initBounds(difficulty);
+        final int lowerBound = bounds.getFirst();
+        final int upperBound = bounds.getSecond();
+        
+        final int aa = Algorithms.randInt(lowerBound, upperBound);
+        final int pp = Algorithms.randPrime(lowerBound, upperBound);
+        setVariables(aa, pp);
+    }
+    
+    /**
+     * Instantiate with user provided parameters.
+     * @param aa Integer
+     * @param pp Odd prime
+     */
+    public LegendreSymbolProblem(final int aa, final int pp) {
+        setVariables(aa, pp);
+    }
+    
+    private void setVariables(final int aa, final int pp) {
+        a = aa;
+        p = pp;
+        result = new ArrayList<>(1);
+        result.add(Algorithms.legendreSymbol(a, p));
+        prepareAll();
+    }
+
+    @Override
+    protected void prepareProblemPlaintext() {
+        problemPlaintext = AlgorithmsSteps.buildLegendreSymbolEquals(a, p).toString();
+    }
+
+    @Override
+    protected void prepareProblemLaTeX() {
+        final String tmp = Utils.prepareFractionsMath(problemPlaintext);
+        problemLaTeX = Utils.prepareDisplayMath(tmp);
+    }
+
+    @Override
+    protected void prepareSolutionPlaintext() {
+        solutionPlaintext = AlgorithmsSteps.legendreSymbolSteps(a, p);
+    }
+
+    @Override
+    protected void prepareSolutionLaTeX() {
+        solutionLaTeX = Utils.prepareBasicMath(solutionPlaintext);
+        System.out.println(solutionLaTeX);
+        solutionLaTeX = Utils.prepareFractionsMath(solutionLaTeX);
+        System.out.println(solutionLaTeX);
+        solutionLaTeX = Utils.prepareAlignMath(solutionLaTeX);
+    }
+}
