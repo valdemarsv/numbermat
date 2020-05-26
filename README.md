@@ -3,12 +3,14 @@
 Math problem generator created as a part of my [bachelor's thesis](https://is.muni.cz/th/k5kl2/)
 at the [Faculty of Informatics](http://fi.muni.cz/), Masaryk University, Czech Republic.
 
-Controlled via a GUI, Numbermat can generate from 13 types of math problems (from the area of algebra and number theory),
-randomly or with user defined parameters.
+Controlled via a GUI, Numbermat can generate from 13 types of math problems
+(from the area of algebra and number theory), randomly or with user defined parameters.
 It provides a solution for each problem and allows exporting it into `.tex` and a corresponding `.pdf` file.
 
-The project has been replaced with a [web version](https://www.fi.muni.cz/~xzak11/) created by Mário Žák in 2020.
-([GitHub](https://github.com/maarioz/Numbermat-WebApp))
+![Preview of the application window](preview.png)
+
+The project has been replaced with a [web version](https://www.fi.muni.cz/~xzak11/) created by
+Mário Žák in his [bachelor's thesis](https://is.muni.cz/th/zol1p/) in 2020. ([GitHub](https://github.com/maarioz/Numbermat-WebApp))
 
 ## License
 
