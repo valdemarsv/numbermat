@@ -11,7 +11,7 @@ It provides a solution for each problem and allows exporting it into `.tex` and 
 
 The application is written in Java and requires a [Java Runtime Environment](https://www.java.com/en/download/) to run.
 
-Therefore, it is preferred to use modern [web version](https://www.fi.muni.cz/~xzak11/) created by
+Therefore, it is preferred to use the modern and lightweight [web version](https://www.fi.muni.cz/~xzak11/) created by
 Mário Žák in his [bachelor's thesis](https://is.muni.cz/th/zol1p/) in 2020. ([GitHub](https://github.com/maarioz/Numbermat-WebApp))
 
 ## License
